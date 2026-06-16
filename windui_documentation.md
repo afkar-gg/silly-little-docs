@@ -6,7 +6,7 @@ This document is a consolidated Markdown reference for WindUI, a Luau UI library
 
 ## Overview
 
-WindUI provides window creation, theming, tabs, tab sections, dialogs, popups, tags, notifications, dividers, spacing, form elements, code blocks, paragraphs, sections, config saving, localization, icons, and an optional key system. The documented version visible in the upstream site navigation is `1.6.53` Beta.
+WindUI provides window creation, theming, tabs, tab sections, dialogs, popups, tags, notifications, dividers, spacing, form elements, code blocks, paragraphs, sections, config saving, localization, icons, and an optional key system. The documented version visible in the upstream site navigation is `1.6.65` Beta.
 
 The API examples assume `WindUI` has already been loaded, usually with `loadstring(game:HttpGet(...))()`, and that UI elements are created from a `Window`, `Tab`, or related parent object.
 
@@ -40,12 +40,14 @@ The API examples assume `WindUI` has already been loaded, usually with `loadstri
 - [Code](#code)
 - [Colorpicker](#colorpicker)
 - [Dropdown](#dropdown)
+- [HStack](#hstack)
 - [Input](#input)
 - [Keybind](#keybind)
 - [Paragraph](#paragraph)
 - [Section](#section)
 - [Slider](#slider)
 - [Toggle](#toggle)
+- [VStack](#vstack)
 
 ### Other
 
@@ -465,6 +467,16 @@ Window.AllElements
 Window:SetIconSize(48) -- default is 20
 ```
 
+#### Set Window Size
+```luau
+Window:SetSize(UDim2.fromOffset(600, 500))
+```
+
+#### Set Panel Background
+```luau
+Window:SetPanelBackground(0.5) -- sets panel background transparency
+```
+
 ---
 #### API
 ### Window Options
@@ -474,6 +486,7 @@ Window:SetIconSize(48) -- default is 20
 | `Title` | `string` | `true` | `UI Library` | Title of the window. |
 | `Icon` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the window. |
 | `IconSize` | `number` | `false` | `20` | Icon Size. |
+| `IconRadius` | `number` | `false` | `nil` | Corner radius for the window icon |
 | `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
 | `Author` | `string` | `false` | `nil` | Name of the UI author. |
 | `Folder` | `string` | `true` | `nil` | Folder name for saving data (like keys, URL images). |
@@ -743,6 +756,8 @@ Tab:Select() -- Select Tab
 | `Icon` | `string` | `false` | `nil` | Lucide or rbxassetid icon or URL for the Tab. |
 | `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
 | `Locked` | `boolean` | `false` | `false` | Locking the Tab. |
+| `CustomEmptyPage` | `Instance` | `false` | `nil` | Custom page displayed when tab has no elements |
+| `TabTitleAlign` | `string` | `false` | `nil` | Alignment of the tab title (applies to ShowTabTitle) |
 
 ## Tab Section
 
@@ -893,7 +908,13 @@ Window:Tag({
     Icon = "github",
     Color = Color3.fromHex("#30ff6a"),
     Radius = 0, -- from 0 to 13
+    Border = false, -- adds border to the tag
 })
+```
+
+#### Destroy Tag
+```luau
+Tag:Destroy()
 ```
 #### API
 ### Tag Options
@@ -904,6 +925,7 @@ Window:Tag({
 | `Icon` | `string` | `false` | `nil` | Icon of the Tag. |
 | `Color` | `Color3` | `false` | `Color3.fromHex("#315dff")` | Tag Color. |
 | `Radius` | `number` | `false` | `13` | Tag Radius (0–13) |
+| `Border` | `boolean` | `false` | `false` | Adds border to the tag |
 
 ## Notification
 
@@ -926,6 +948,7 @@ WindUI:Notify({
 | `Title` | `string` | `true` | `Button` | Title of the Notification. |
 | `Content` | `string` | `false` | `nil` | Content of the Notification. |
 | `Duration` | `number` | `false` | `5` | Duration of the Notification. |
+| `CanClose` | `boolean` | `false` | `false` | Whether the notification can be dismissed by the user |
 | `Icon` | `string` | `false` | `nil` | Icon of the Notification. |
 | `IconThemed` | `boolean` | `false` | `false` | Will color the icon to match the Theme, if you don\'t use Lucide icons but use other vector icons (rbxassetid or URL) |
 
@@ -1031,6 +1054,7 @@ Button:Destroy()
 | `Color` | `Color3` | `false` | `nil` | Button Color |
 | `Justify` | `string` | `false` | `Between` | Items horizontal align |
 | `IconAlign` | `string` | `false` | `Right` | Icon align |
+| `IconColor` | `Color3` | `false` | `nil` | Color of the Button icon |
 | `Locked` | `boolean` | `false` | `false` | Locks the Element |
 | `Callback` | `function` | `false` | `nil` | Callback of the Button |
 
@@ -1292,6 +1316,7 @@ Dropdown:Destroy()
 | `AllowNone` | `boolean` | `false` | `false` | Allow None selected |
 | `SearchBarEnabled` | `boolean` | `false` | `false` | Enable Search |
 | `Multi` | `boolean` | `false` | `false` | Select multiple values |
+| `IconSize` | `number` | `false` | `nil` | Size of the dropdown icons |
 | `Locked` | `boolean` | `false` | `false` | Locks the Element |
 | `Callback` | `function` | `false` | `nil` | Callback of the Dropdown |
 
@@ -1360,7 +1385,7 @@ Input:Destroy()
 | `Desc` | `string` | `false` | `nil` | Description of the Input. |
 | `Value` | `string` | `false` | `nil` | Default value of the Input |
 | `Placeholder` | `string` | `true` | `nil` | Placeholder Text of the Input |
-| `Type` | `string` | `false` | `Input` | Type of input (`Textarea` or `Input`) |
+| `Type` | `string` | `false` | `Input` | Type of input (`Input`, `Textarea`, or `Default`) |
 | `InputIcon` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the Input |
 | `Locked` | `boolean` | `false` | `false` | Locks the Element |
 | `Callback` | `function` | `false` | `nil` | Callback of the Input |
@@ -1558,11 +1583,51 @@ Section:Button({ ... })
 | --- | --- | --- | --- | --- |
 | `Title` | `string` | `true` | `Section` | Title of the Section. |
 | `Box` | `boolean` | `false` | `false` | Section in the box |
+| `Boxborder` | `boolean` | `false` | `false` | Adds border to the box section |
+| `Desc` | `string` | `false` | `nil` | Description text for the section |
 | `FontWeight` | `string` | `false` | `SemiBold` | Title Font Weight |
 | `TextTransparency` | `number` | `false` | `0.05` | Text Transparency |
 | `TextXAlignment` | `string` | `false` | `nil` | Text Horizontal Alignment |
 | `TextSize` | `number` | `false` | `nil` | Text Size of the Section |
 | `Opened` | `boolean` | `false` | `false` | Will the section be open |
+
+## HStack
+
+Creating horizontal layout.
+
+### Creating HStack
+
+```luau
+local HStack = Tab:HStack({
+    Title = "HStack",
+    Elements = {
+        -- elements inside this stack
+    }
+})
+```
+
+> `HStack` arranges child elements horizontally. `Group` is an alias for `HStack`.
+
+---
+
+## VStack
+
+Creating vertical layout.
+
+### Creating VStack
+
+```luau
+local VStack = Tab:VStack({
+    Title = "VStack",
+    Elements = {
+        -- elements inside this stack
+    }
+})
+```
+
+> `VStack` arranges child elements vertically.
+
+---
 
 ## Slider
 
