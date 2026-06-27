@@ -133,7 +133,10 @@ Inside each groupbox/tabbox, you can add any UI Element in the UI elements secti
 
 Start by selecting in what environment you'd like Obsidian to be shown in. Then follow the instructions to install everything properly.
 
-#### [ExecutorInstall Obsidian in an executor environment](https://docs.mspaint.cc/obsidian/installation/executor)[![Roblox Studio](https://docs.mspaint.cc/_next/image?url=%2Fimages%2Ficons%2Frobloxstudio.png&w=32&q=75)Roblox StudioInstall Obsidian in Roblox Studio](https://docs.mspaint.cc/obsidian/installation/roblox-studio)[![Next.js + Tailwind](https://docs.mspaint.cc/images/icons/nextjs.svg)Next.js + TailwindInstall Obsidian in a Next.js + Tailwind environment](https://docs.mspaint.cc/obsidian/installation/next)[![HTML](https://docs.mspaint.cc/images/icons/html5.svg)HTMLInstall Obsidian in a vanilla HTML environment](https://docs.mspaint.cc/obsidian/installation/html)
+  * [Executor](https://docs.mspaint.cc/obsidian/installation/executor) - Install Obsidian in an executor environment
+  * [Roblox Studio](https://docs.mspaint.cc/obsidian/installation/roblox-studio) - Install Obsidian in Roblox Studio
+  * [Next.js + Tailwind](https://docs.mspaint.cc/obsidian/installation/next) - Install Obsidian in a Next.js + Tailwind environment
+  * [HTML](https://docs.mspaint.cc/obsidian/installation/html) - Install Obsidian in a vanilla HTML environment
 
 ---
 
@@ -2770,12 +2773,6 @@ Arg Idx| Argument Description| Type| Default
 
 ## Label
 
-### Playground
-
-[<font color="rgb(73, 230, 133)">Obsidian</font>] every text component (ex: Notification Title, Descriptions, etc.) supports <b>Rich Text</b> by default!
-
-Label text
-
 ### Usage
 
 You can create a Label by calling the `AddLabel` method on a Groupbox.
@@ -2864,16 +2861,6 @@ Destroys the label and removes it from the UI.
 ---
 
 ## Button
-
-### Playground
-
-Button text
-
-Sub button text
-
-Sub button
-
-Use the switch to enable the sub button and edit its label.
 
 ### Usage
 
@@ -2967,12 +2954,6 @@ You can add a KeyPicker to a button. Note that this only works with the 'Press' 
 ---
 
 ## Toggles
-
-### Playground
-
-Enable Speed Hack
-
-Toggle text
 
 ### Usage
 
@@ -3127,12 +3108,6 @@ Destroys the toggle and removes it from the UI.
 
 ## Checkboxes
 
-### Playground
-
-Enable Speed Hack
-
-Toggle text
-
 ### Usage
 
 You can create a Checkbox by calling the `AddCheckbox` method on a Groupbox.
@@ -3286,16 +3261,6 @@ Destroys the toggle and removes it from the UI.
 
 ## Inputs
 
-### Playground
-
-Notification Sound ID
-
-Label text
-
-Placeholder
-
-Current value
-
 ### Usage
 
 You can create an Input by calling the `AddInput` method on a Groupbox.
@@ -3428,30 +3393,6 @@ Destroys the input and removes it from the UI.
 ---
 
 ## Slider
-
-### Playground
-
-Slider
-
-25/100
-
-Label text
-
-Current value
-
-Min
-
-Max
-
-Rounding
-
-Prefix
-
-Suffix
-
-Compact
-
-Toggle compact view
 
 ### Usage
 
@@ -3622,36 +3563,6 @@ Destroys the slider and removes it from the UI.
 ---
 
 ## Dropdown
-
-### Playground
-
-A dropdown
-
-Label text
-
-Values (comma separated)
-
-Default value or index
-
-Disabled values (comma separated)
-
-Limit visible items
-
-Control dropdown height
-
-Special typeNonePlayerTeam
-
-Multi select
-
-Allow selecting multiple values
-
-Allow empty selection
-
-Permit clearing the selection
-
-Searchable
-
-Enable searching through values
 
 ### Usage
 
@@ -3858,30 +3769,6 @@ Arg Idx| Argument Description| Type| Default
 
 ## Keybind
 
-### Playground
-
-Example Toggle
-
-F
-
-Toggle text
-
-Keybind text
-
-Default key
-
-ModeToggleHoldAlwaysPress
-
-Custom modes (comma separated)Leave blank to use the default modes list.
-
-Sync toggle state
-
-Keep toggle value in sync
-
-Hide from menu
-
-Do not show in keybind list
-
 ### Usage
 
 You can create a Keybind by calling the `AddKeyPicker` method on a toggle or label reference. Keybinds can hang off any element that returns a reference (for example `AddToggle` or `AddLabel`).
@@ -4025,20 +3912,6 @@ Destroys the keybind and removes it from the UI.
 
 ## Color Picker
 
-### Playground
-
-This is a toggle
-
-Toggle text
-
-Color picker title
-
-Default color (r,g,b)Values must be between 0 and 1.
-
-Enable transparency
-
-Allow transparency selection
-
 ### Usage
 
 You can create a Color Picker by calling the `AddColorPicker` method on a toggle or label reference.
@@ -4150,20 +4023,6 @@ Color pickers can also be attached to labels via `AddLabel(...):AddColorPicker(.
 
 ## Divider
 
-### Playground
-
-Create Logs
-
-* * *
-
-Divider text
-
-Margin
-
-Margin Top
-
-Margin Bottom
-
 ### Usage
 
 You can create a Divider by calling the `AddDivider` method on a Groupbox.
@@ -4213,20 +4072,6 @@ Destroys the divider and removes it from the UI.
 ---
 
 ## Viewport
-
-### Playground
-
-Height (px)
-
-Interactive
-
-Allow orbit + zoom controls
-
-Auto focus
-
-Focus on object automatically
-
-Manual focus
 
 ### Usage
 
@@ -4360,26 +4205,6 @@ Destroys the viewport and removes it from the UI.
 ---
 
 ## Image
-
-### Playground
-
-Unavailable
-
-Image URL or asset
-
-Height (px)
-
-Color tint (RGB 0-1)
-
-Transparency (0-1)
-
-Background Transparency (0-1)
-
-Rect offset (x, y)
-
-Rect size (x, y)
-
-Scale typeFitFillStretch
 
 ### Usage
 
@@ -4537,24 +4362,6 @@ Destroys the image element and removes it from the UI.
 
 ## Video
 
-### Playground
-
-Unavailable
-
-Video URL or asset
-
-Height (px)
-
-Volume
-
-Looped
-
-Restart automatically when finished.
-
-Playing
-
-Start playback immediately.
-
 ### Usage
 
 You can create a Video element by calling `AddVideo` on a Groupbox.
@@ -4697,20 +4504,6 @@ Destroys the video element and removes it from the UI.
 ---
 
 ## UI Passthrough
-
-### Playground
-
-Unavailable
-
-Instance variable
-
-Provide the variable name of your GUI instance.
-
-Height (px)
-
-Visible
-
-Control whether the passthrough frame is displayed.
 
 ### Usage
 
