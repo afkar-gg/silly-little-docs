@@ -383,17 +383,106 @@ error("Error on line: 3")
 
 **Incorrect Usage:**
 
+### LPH_ENCBUF
+
 ```lua
-LPH_LINE() -- LPH_LINE is a number value, not a function.
+buffer LPH_ENCBUF(const string toEncrypt)
 ```
+
+**Description:** Encrypts the specified string constant into a Luau buffer structure using Luraph's cryptographic algorithm. Decrypts directly into a fast buffer at runtime.
+
+**Aliases:** `LPH_BUFENC`
+
+**Correct Usage:**
+
+```lua
+local myBuffer = LPH_ENCBUF("Sensitive Payload Data")
+```
+
+---
+
+### LPH_STACKALLOC
+
+```lua
+table LPH_STACKALLOC(number size, number? base)
+```
+
+**Description:** Provides stack-allocated table memory optimization. Implements `.clear()`, `.pack()`, `.unpack()`, and `#__len` metamethods for high-frequency low-overhead allocations.
+
+**Correct Usage:**
+
+```lua
+local stack = LPH_STACKALLOC(16, 0)
+stack:pack("a", "b", "c")
+local a, b, c = stack:unpack()
+stack:clear()
+```
+
+---
+
+### LPH_PRECHECK
+
+```lua
+void LPH_PRECHECK(function checkCallback)
+```
+
+**Description:** Executes a pre-run integrity check callback before the main payload initializes.
+
+**Correct Usage:**
+
+```lua
+LPH_PRECHECK(function()
+	if not game then while true do end end
+end)
+```
+
+---
+
+### LPH_REWRITE
+
+```lua
+any LPH_REWRITE(any expression)
+```
+
+**Description:** Hints compiler to apply specialized AST rewriting rules to expressions.
+
+---
+
+## Luraph Attributes & Directives
+
+Luraph supports attribute decorators for functions and code blocks:
+
+```lua
+@[LPH_ATTRIBUTES(VM.OPAL, PRESET.FAST, OPTIMIZE.INLINE)]
+local function computeFast(x, y)
+	return x + y
+end
+```
+
+### Available Attribute Decorators
+
+| Category | Directives | Description |
+| :--- | :--- | :--- |
+| **VM Target** | `VM.NONE`, `VM.OPAL`, `VM.ONYX` | Specifies custom VM architecture target. |
+| **Presets** | `PRESET.FAST`, `PRESET.BALANCED`, `PRESET.SECURE` | Tunes security vs performance profile. |
+| **Optimizations** | `OPTIMIZE.INLINE`, `OPTIMIZE.UNROLL` | Inlines or unrolls loops and function calls. |
+| **Encryption** | `ENCRYPT.GLOBALS`, `ENCRYPT.CONSTANTS` | Forces extraction and encryption of globals/constants. |
+| **Transforms** | `TRANSFORM.CONTROL_FLOW`, `TRANSFORM.REWRITE_NAMECALLS` | Custom control flow flattening and namecall rewriting. |
+| **Compatibility** | `NO_UPVALUES`, `ERROR_HANDLING` | Adjusts closure upvalue handling and error traps. |
+
+---
 
 ## Quick Reference Table
 
 | Macro | Type | Description |
 | --- | --- | --- |
-| `LPH_ENCFUNC` | Function | Cryptographically encrypts a function |
-| `LPH_ENCSTR` | Function | Encrypts a string constant |
-| `LPH_ENCNUM` | Function | Encrypts a number constant |
+| `LPH_ENCFUNC` / `LPH_FUNCENC` | Function | Cryptographically encrypts a function with a 64-hex key |
+| `LPH_ENCSTR` / `LPH_STRENC` | Function | Encrypts a string constant |
+| `LPH_ENCNUM` / `LPH_NUMENC` | Function | Encrypts a number constant |
+| `LPH_ENCBUF` / `LPH_BUFENC` | Function | Encrypts constant into a Luau buffer |
+| `LPH_STACKALLOC` | Function | Fast stack-allocated array struct |
+| `LPH_PRECHECK` | Function | Pre-execution callback wrapper |
+| `LPH_REWRITE` | Function | AST rewrite expression hint |
 | `LPH_CRASH` | Function | Securely crashes the VM |
 | `LPH_JIT` | Function | Optimizes function for performance |
 | `LPH_JIT_MAX` | Function | More aggressive performance optimization |
@@ -402,45 +491,89 @@ LPH_LINE() -- LPH_LINE is a number value, not a function.
 | `LPH_OBFUSCATED` | Constant | Boolean, true when obfuscated |
 | `LPH_LINE` | Constant | Current line number during compilation |
 
-## Usage Examples
+---
 
-### Performance Optimization
+## Official Macro SDK Development Shim
+
+Include this header at the top of your scripts to allow local development and testing without errors:
 
 ```lua
--- Optimize a rendering loop
-local renderLoop = LPH_JIT(function()
-	for i = 1, #objects do
-		objects[i].CFrame = calculateTransform(objects[i])
+if not LPH_OBFUSCATED then
+	LPH_OBFUSCATED = false
+	LPH_ENCSTR = function(n) return n end
+	LPH_ENCNUM = function(n) return n end
+	LPH_STRENC = function(n) return n end
+	LPH_NUMENC = function(n) return n end
+
+	if buffer then
+		local buffer_fromstring = buffer.fromstring
+		LPH_ENCBUF = function(n) return buffer_fromstring(n) end
+		LPH_BUFENC = function(n) return buffer_fromstring(n) end
 	end
-end)
 
-RunService.RenderStepped:Connect(renderLoop)
-```
+	LPH_CRASH = function() while true do end end
+	LPH_JIT = function(...) return ... end
+	LPH_JIT_MAX = function(...) return ... end
+	LPH_NO_VIRTUALIZE = function(...) return ... end
+	LPH_NO_UPVALUES = function(...) return ... end
+	LPH_PRECHECK = function(check) check() end
+	LPH_REWRITE = function(e) return e end
 
-### Conditional Code Based on Obfuscation
+	do
+		local table_unpack = table.unpack or unpack
+		local table_pack = table.pack or function(...) return { n = select("#", ...), ... } end
+		local __stackalloc = {}
+		__stackalloc.__index = __stackalloc
+		__stackalloc.clear = function(self, first, last)
+			first = first or self.__base
+			last = last or self.__end
+			for i = first, last do self[i] = nil end
+		end
+		__stackalloc.unpack = function(self, first, last)
+			first = first or self.__base
+			last = last or self.__end
+			return table_unpack(self, first, last)
+		end
+		__stackalloc.pack = function(self, first, last)
+			first = first or self.__base
+			last = last or self.__end
+			return table_pack(table_unpack(self, first, last))
+		end
+		__stackalloc.__len = function(self) return self.__size end
 
-```lua
-if LPH_OBFUSCATED then
-	-- Code only runs when obfuscated
-	validateLicenseKey()
-else
-	-- Code only runs when not obfuscated (for testing)
-	skipValidation()
+		LPH_STACKALLOC = function(size, base)
+			base = base or 0
+			local allocation = {}
+			allocation.__size = size
+			allocation.__base = base
+			allocation.__end = base + size - 1
+			return setmetatable(allocation, __stackalloc)
+		end
+	end
+
+	-- Attributes
+	local __attribute = function() end
+	LPH_ATTRIBUTES = __attribute
+	ENCRYPT = __attribute
+	VM = __attribute
+	PRESET = __attribute
+	OPTIMIZE = __attribute
+	NO_UPVALUES = __attribute
+	ERROR_HANDLING = __attribute
+	UNROLL = __attribute
+	INLINE = __attribute
+	TRANSFORM = __attribute
+	NONE = __attribute
+	OPAL = __attribute
+	ONYX = __attribute
+	FAST = __attribute
+	BALANCED = __attribute
+	SECURE = __attribute
+	EXTRACT = __attribute
+	CONTROL_FLOW = __attribute
+	REWRITE_NAMECALLS = __attribute
+	GLOBALS = __attribute
+	CONSTANTS = __attribute
 end
 ```
 
-### Encrypting Sensitive Strings
-
-```lua
-local apiKey = LPH_ENCSTR("sk-1234567890abcdef")
-local secretEndpoint = LPH_ENCSTR("https://api.example.com/v1/secret")
-```
-
-### Disabling Obfuscation for Performance-Critical Code
-
-```lua
--- For code that needs maximum performance and doesn't need security
-local mathCalculation = LPH_NO_VIRTUALIZE(function(a, b)
-	return a * b + math.sqrt(a^2 + b^2)
-end)
-```

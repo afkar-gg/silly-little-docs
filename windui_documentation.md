@@ -263,6 +263,27 @@ local Window = WindUI:CreateWindow({
     BackgroundImageTransparency = 0.42,
     HideSearchBar = true,
     ScrollBarEnabled = false,
+    NewElements = true,
+
+    Topbar = {
+        Height = 44,
+        ButtonsType = "Default", -- "Default" or "Mac"
+    },
+
+    OpenButton = {
+        Title = "Open UI",
+        Icon = "monitor",
+        CornerRadius = UDim.new(1, 0),
+        StrokeThickness = 2,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+        Scale = 1,
+        Color = ColorSequence.new(
+            Color3.fromHex("#30FF6A"),
+            Color3.fromHex("#e7ff2f")
+        ),
+    },
 
     -- ↓ Optional. You can remove it.
     --[[ You can set 'rbxassetid://' or video to Background.
