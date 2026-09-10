@@ -1,28 +1,27 @@
 # WindUI Documentation
 
-Source: https://footagesus.github.io/WindUI-Docs/docs
+Source: https://footagesus.github.io/treehub-web/docs/windui
+Upstream Docs: https://footagesus-windui.mintlify.app
+Repository: https://github.com/Footagesus/WindUI
 
-This document is a consolidated Markdown reference for WindUI, a Luau UI library for Roblox script hubs. It is based on the public WindUI documentation and source documentation files from the WindUI-Docs repository. Use this reference only in environments where you have permission to run client-side Luau code, such as your own Roblox experiences, private test places, or controlled research environments. It is not a guide for bypassing Roblox protections, cheating in public experiences, or interfering with other users.
+This document is a consolidated Markdown reference for WindUI, a modern, open-source Luau UI library for Roblox script hubs. It is based on the official WindUI documentation from the treehub-web and Mintlify documentation sites, as well as the upstream repository source code. Use this reference only in environments where you have permission to run client-side Luau code, such as your own Roblox experiences, private test places, or controlled research environments.
 
 ## Overview
 
-WindUI provides window creation, theming, tabs, tab sections, dialogs, popups, tags, notifications, dividers, spacing, form elements, code blocks, paragraphs, sections, config saving, localization, icons, and an optional key system. The documented version visible in the upstream site navigation is `1.6.65` Beta.
+WindUI provides window creation, theming, tabs, tab sections, dialogs, popups, tags, notifications, dividers, spacing, form elements, code blocks, paragraphs, sections, image display, progress bars, stack layouts (HStack & VStack), tooltips, config saving, localization, icons, and an optional key system. The current release is `1.6.66` Beta.
 
-The API examples assume `WindUI` has already been loaded, usually with `loadstring(game:HttpGet(...))()`, and that UI elements are created from a `Window`, `Tab`, or related parent object.
+The API examples assume `WindUI` has already been loaded via `loadstring(game:HttpGet(...))()`, and that UI elements are created from a `Window`, `Tab`, `Section`, `HStack`, or related parent container.
 
 ## Table of Contents
 
 ### Introduction
-
 - [About WindUI](#about-windui)
 
 ### Setup
-
 - [Load WindUI](#load-windui)
 - [Themes](#themes)
 
 ### UI
-
 - [Window](#window)
 - [Key System](#key-system)
 - [Tab](#tab)
@@ -35,102 +34,199 @@ The API examples assume `WindUI` has already been loaded, usually with `loadstri
 - [Space](#space)
 
 ### Elements
-
 - [Button](#button)
-- [Code](#code)
-- [Colorpicker](#colorpicker)
-- [Dropdown](#dropdown)
-- [HStack](#hstack)
+- [Toggle](#toggle)
+- [Slider](#slider)
 - [Input](#input)
+- [Dropdown](#dropdown)
 - [Keybind](#keybind)
+- [Colorpicker](#colorpicker)
+- [Code](#code)
 - [Paragraph](#paragraph)
 - [Section](#section)
-- [Slider](#slider)
-- [Toggle](#toggle)
-- [VStack](#vstack)
+- [Image](#image)
+- [HStack & VStack](#hstack--vstack)
+- [ProgressBar](#progressbar)
+- [Group (deprecated)](#group-deprecated)
 
-### Other
-
-- [Installation](#installation)
+### Features & Utilities
+- [Tooltip](#tooltip)
+- [Acrylic & Transparency](#acrylic--transparency)
 - [Localization](#localization)
 - [Configs](#configs)
 - [Icons](#icons)
+- [Fork & Development](#fork--development)
 - [FAQ](#faq)
+
+---
 
 ## About WindUI
 
-WindUI is a stylish, open-source Luau UI library designed for Roblox script hubs. It provides a modern and customizable interface toolkit with windows, tabs, dialogs, popups, notifications, form elements, theming, localization, config saving, and an optional key system.
+WindUI is a modern, themeable, and open-source Luau UI library designed for Roblox script hubs. It provides a customizable interface toolkit with windows, tabs, dialogs, popups, notifications, form elements, acrylic frosted glass effects, localization, config saving, and an optional key system.
 
-Key characteristics documented by the project:
+Key characteristics:
+- Modern design with smooth tween transitions
+- 15+ built-in themes and customizable palettes with gradient support
+- Comprehensive UI controls including buttons, toggles, sliders, dropdowns, inputs, colorpickers, and keybinds
+- Advanced layout containers (HStack, VStack, collapsible sections)
+- Built-in key system with static, multi-key, file-persisted, validator, and external API verification
+- Dynamic localization and automatic config persistence
 
-- Modern design
-- Customizable themes and controls
-- Open source project
-- Many UI elements
-- Built-in key system support
+WindUI is in active Beta. Method signatures and configuration keys may change between releases.
 
-> WindUI is currently in Beta. The upstream documentation notes that bugs, issues, and unstable features may occur while active development continues.
+---
 
 ## Load WindUI
 
-Load WindUI with loadstring.
+Load WindUI using `loadstring` and `game:HttpGet`.
 
 ### Load methods
 
-- Load latest version Recommended
+#### Selected version (Recommended for stability)
+```luau
+local Version = "1.6.66"
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
+```
+
+#### Latest release
 ```luau
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 ```
 
-- Load selected version
+#### Development build (Unstable / dist)
 ```luau
-local Version = "1.6.41"
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 ```
-#### Setting Library
+
+### Library Configuration & Methods
+
 #### Set Notification Lower
+Positions notifications lower to avoid overlapping mobile jump buttons:
 ```luau
 WindUI:SetNotificationLower(true)
 ```
 
-#### Set Font
+#### Set Custom Font
+Applies a custom font across the entire interface:
 ```luau
 WindUI:SetFont("rbxassetid://font-id-here")
 ```
-#### Other
-#### Get Themes
+
+#### Set Parent GUI
+Sets the GUI parent container:
 ```luau
-WindUI:GetThemes()
+WindUI:SetParent(gethui and gethui() or game:GetService("CoreGui"))
+```
+
+#### Toggle Acrylic Blur
+Enables or disables the acrylic blur background effect:
+```luau
+WindUI:ToggleAcrylic(true)
+```
+
+#### Get Themes
+Returns an array of all registered theme names:
+```luau
+local themes = WindUI:GetThemes()
 ```
 
 #### Get Current Theme
+Returns the name of the currently active theme:
 ```luau
-WindUI:GetCurrentTheme()
+local currentTheme = WindUI:GetCurrentTheme()
 ```
 
-#### Get Window Transparency (true or false)
+#### Get Window Transparency
+Returns the base transparency value applied to the window:
 ```luau
-WindUI:GetTransparency()
+local transparency = WindUI:GetTransparency()
 ```
 
-#### Get Window Size (UDim2)
+#### Get Window Size
+Returns the base `UDim2` size of the window:
 ```luau
-WindUI:GetWindowSize()
+local windowSize = WindUI:GetWindowSize()
 ```
+
+#### Send Notification
+```luau
+WindUI:Notify({
+    Title = "Notification Title",
+    Content = "Notification message content",
+    Duration = 3,
+    Icon = "bell",
+})
+```
+
+#### Open Popup
+```luau
+WindUI:Popup({
+    Title = "Notice",
+    Icon = "info",
+    Content = "Important message for the user.",
+    Buttons = {
+        {
+            Title = "Cancel",
+            Variant = "Tertiary",
+            Callback = function() end,
+        },
+        {
+            Title = "Continue",
+            Icon = "arrow-right",
+            Variant = "Primary",
+            Callback = function() end,
+        },
+    },
+})
+```
+
+---
 
 ## Themes
 
-Creating Theme and Using it.
+WindUI includes 16 built-in themes and full support for custom theme registration and runtime switching.
 
-### Creating Theme
-**Default:**
+### Built-in Themes
+- `Dark` (default)
+- `Light`
+- `Rose`
+- `Plant`
+- `Red`
+- `Indigo`
+- `Sky`
+- `Violet`
+- `Amber`
+- `Emerald`
+- `Midnight`
+- `Crimson`
+- `MonokaiPro`
+- `CottonCandy`
+- `Mellowsi`
+- `Rainbow`
 
+### Switching Themes
+
+#### In `CreateWindow`
+```luau
+local Window = WindUI:CreateWindow({
+    Title = "My Hub",
+    Theme = "Dark",
+})
+```
+
+#### At runtime
+```luau
+WindUI:SetTheme("Indigo")
+```
+
+### Creating Custom Themes
+
+#### Minimalist Theme
 ```luau
 WindUI:AddTheme({
-    Name = "My Theme", -- theme name
-
+    Name = "CustomDark",
     Accent = Color3.fromHex("#18181b"),
-    Background = Color3.fromHex("#101010"), -- Accent
+    Background = Color3.fromHex("#101010"),
     Outline = Color3.fromHex("#FFFFFF"),
     Text = Color3.fromHex("#FFFFFF"),
     Placeholder = Color3.fromHex("#7a7a7a"),
@@ -138,132 +234,120 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#a1a1aa"),
 })
 ```
-**Advanced:**
 
+#### Advanced Theme
 ```luau
 WindUI:AddTheme({
-    Name = "My Theme", -- theme name
-
-    -- More Soon!
+    Name = "AdvancedCustom",
+    Primary = Color3.fromHex("#0091FF"),
+    White = Color3.new(1, 1, 1),
+    Black = Color3.new(0, 0, 0),
 
     Accent = Color3.fromHex("#18181b"),
-    Background = Color3.fromHex("#101010"), -- Accent
+    Background = Color3.fromHex("#101010"),
     BackgroundTransparency = 0,
+    Hover = Color3.fromHex("#FFFFFF"),
+
     Outline = Color3.fromHex("#FFFFFF"),
     Text = Color3.fromHex("#FFFFFF"),
     Placeholder = Color3.fromHex("#7a7a7a"),
     Button = Color3.fromHex("#52525b"),
     Icon = Color3.fromHex("#a1a1aa"),
 
-    Hover = Color3.fromHex("#FFFFFF"), -- Text
-    BackgroundTransparency = 0,
+    PanelBackground = Color3.new(1, 1, 1),
+    PanelBackgroundTransparency = 0.95,
 
-    WindowBackground = Color3.fromHex("101010"), -- Background
-    WindowShadow = Color3.fromHex("000000"),
+    WindowBackground = Color3.fromHex("#101010"),
+    WindowShadow = Color3.new(0, 0, 0),
 
-    DialogBackground = Color3.fromHex("#101010"), -- Background
-    DialogBackgroundTransparency = 0, -- BackgroundTransparency
-    DialogTitle = Color3.fromHex("#FFFFFF"), -- Text
-    DialogContent = Color3.fromHex("#FFFFFF"), -- Text
-    DialogIcon = Color3.fromHex("#a1a1aa"), -- Icon
+    WindowTopbarTitle = Color3.fromHex("#FFFFFF"),
+    WindowTopbarAuthor = Color3.fromHex("#FFFFFF"),
+    WindowTopbarIcon = Color3.fromHex("#a1a1aa"),
+    WindowTopbarButtonIcon = Color3.fromHex("#a1a1aa"),
+    WindowSearchBarBackground = Color3.fromHex("#101010"),
 
-    WindowTopbarButtonIcon = Color3.fromHex("a1a1aa"), -- Icon
-    WindowTopbarTitle = Color3.fromHex("FFFFFF"), -- Text
-    WindowTopbarAuthor = Color3.fromHex("FFFFFF"), -- Text
-    WindowTopbarIcon = Color3.fromHex("FFFFFF"), -- Text
+    TabBackground = Color3.fromHex("#FFFFFF"),
+    TabTitle = Color3.fromHex("#FFFFFF"),
+    TabIcon = Color3.fromHex("#a1a1aa"),
 
-    TabBackground = Color3.fromHex("#FFFFFF"), -- Text
-    TabTitle = Color3.fromHex("#FFFFFF"), -- Text
-    TabIcon = Color3.fromHex("a1a1aa"), -- Icon
+    ElementBackground = Color3.fromHex("#2A2A2C"),
+    ElementBackgroundTransparency = 0,
+    ElementTitle = Color3.fromHex("#FFFFFF"),
+    ElementDesc = Color3.fromHex("#FFFFFF"),
+    ElementIcon = Color3.fromHex("#a1a1aa"),
 
-    ElementBackground = Color3.fromHex("#FFFFFF"), -- Text
-    ElementTitle = Color3.fromHex("#FFFFFF"), -- Text
-    ElementDesc = Color3.fromHex("#FFFFFF"), -- Text
-    ElementIcon = Color3.fromHex("#a1a1aa"), -- Icon
+    Toggle = Color3.fromHex("#33C759"),
+    ToggleBar = Color3.fromHex("#FFFFFF"),
+    Checkbox = Color3.fromHex("#0091FF"),
+    CheckboxIcon = Color3.fromHex("#FFFFFF"),
+    Slider = Color3.fromHex("#0091FF"),
+    SliderThumb = Color3.fromHex("#FFFFFF"),
 
-    PopupBackground = Color3.fromHex("#101010"), -- Background
-    PopupBackgroundTransparency = 0, -- BackgroundTransparency
-    PopupTitle = Color3.fromHex("#FFFFFF"), -- Text
-    PopupContent = Color3.fromHex("#FFFFFF"), -- Text
-    PopupIcon = Color3.fromHex("#a1a1aa"), -- Icon
+    Dialog = Color3.fromHex("#18181b"),
+    DialogBackground = Color3.fromHex("#101010"),
+    DialogBackgroundTransparency = 0,
+    DialogTitle = Color3.fromHex("#FFFFFF"),
+    DialogContent = Color3.fromHex("#FFFFFF"),
+    DialogIcon = Color3.fromHex("#a1a1aa"),
 
-    DialogBackground = Color3.fromHex("#101010"), -- Background
-    DialogBackgroundTransparency = 0, -- Transparency
-    DialogTitle = Color3.fromHex("#FFFFFF"), -- Text
-    DialogContent = Color3.fromHex("#FFFFFF"), -- Text
-    DialogIcon = Color3.fromHex("#a1a1aa"), -- Icon
+    PopupBackground = Color3.fromHex("#101010"),
+    PopupBackgroundTransparency = 0,
+    PopupTitle = Color3.fromHex("#FFFFFF"),
+    PopupContent = Color3.fromHex("#FFFFFF"),
+    PopupIcon = Color3.fromHex("#a1a1aa"),
 
-    Toggle = Color3.fromHex("#52525b"), -- Button
-    ToggleBar = Color3.fromHex("#FFFFFF"), -- White
-
-    Checkbox = Color3.fromHex("#52525b"), -- Button
-    CheckboxIcon = Color3.fromHex("#FFFFFF"), -- White
-
-    Slider = Color3.fromHex("#52525b"), -- Button
-    SliderThumb = Color3.fromHex("#FFFFFF"), -- White
-
+    Tooltip = Color3.fromHex("#18181b"),
 })
 ```
-**With Gradients:**
 
+#### Gradients
+Theme tokens support gradients via `WindUI:Gradient()`:
 ```luau
 WindUI:AddTheme({
-    Name = "My Theme", -- theme name
-
-    -- example of gradient (available for all values. e.g. Button, Icon, Text...)   --
-    Accent = WindUI:Gradient({                                                      --
-        ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },            --
-        ["100"]   = { Color = Color3.fromHex("#18181b"), Transparency = 0 },        --
-    }, {                                                                            --
-        Rotation = 0,                                                               --
-    }),                                                                             --
-
+    Name = "GradientTheme",
+    Accent = WindUI:Gradient({
+        ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },
+        ["100"] = { Color = Color3.fromHex("#18181b"), Transparency = 0 },
+    }, {
+        Rotation = 0,
+        Offset = Vector2.new(0, 0),
+    }),
 })
 ```
-#### Gradient Example
-```lua
-WindUI:Gradient({
-    ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },
-    ["100"]   = { Color = Color3.fromHex("#18181b"), Transparency = 0 },
-}, {
-    Rotation = 0,
-}),
-```
 
-#### Set Theme
-```luau
-WindUI:SetTheme("My Theme")
-```
+---
 
 ## Window
 
-Creating Window and Editing it.
+The Window serves as the root container for all tabs and UI components.
 
-### Creating Window
+### Creating a Window
 
-#### Full & Short example
-**Full example:**
-
+#### Comprehensive Example
 ```luau
 local Window = WindUI:CreateWindow({
-    Title = "My Super Hub",
-    Icon = "door-open", -- lucide icon
-    Author = "by .ftgs and .ftgs",
-    Folder = "MySuperHub",
+    Title = "My Hub",
+    Icon = "door-open",
+    Author = "by Developer",
+    Folder = "MyHubData",
 
-    -- ↓ This all is Optional. You can remove it.
     Size = UDim2.fromOffset(580, 460),
     MinSize = Vector2.new(560, 350),
     MaxSize = Vector2.new(850, 560),
-    ToggleKey = Enum.KeyCode.LeftShift,
+    Position = UDim2.new(0.5, 0, 0.5, 0),
+
     Transparent = true,
     Theme = "Dark",
     Resizable = true,
     SideBarWidth = 200,
-    BackgroundImageTransparency = 0.42,
     HideSearchBar = true,
     ScrollBarEnabled = false,
+    Acrylic = false,
     NewElements = true,
+    AutoScale = true,
+
+    BackgroundImageTransparency = 0.42,
+    -- Background can be "rbxassetid://", a raw image URL, "video:path", or a WindUI:Gradient table
 
     Topbar = {
         Height = 44,
@@ -273,7 +357,7 @@ local Window = WindUI:CreateWindow({
     OpenButton = {
         Title = "Open UI",
         Icon = "monitor",
-        CornerRadius = UDim.new(1, 0),
+        CornerRadius = UDim.new(0, 16),
         StrokeThickness = 2,
         Enabled = true,
         Draggable = true,
@@ -285,1847 +369,1030 @@ local Window = WindUI:CreateWindow({
         ),
     },
 
-    -- ↓ Optional. You can remove it.
-    --[[ You can set 'rbxassetid://' or video to Background.
-        'rbxassetid://':
-            Background = "rbxassetid://", -- rbxassetid
-        Video:
-            Background = "video:YOUR-RAW-LINK-TO-VIDEO.webm", -- video
-    --]]
-
-    -- ↓ Optional. You can remove it.
     User = {
         Enabled = true,
-        Anonymous = true,
+        Anonymous = false,
         Callback = function()
-            print("clicked")
+            print("User profile clicked")
         end,
     },
-
-    --       remove this all,
-    -- !  ↓  if you DON'T need the key system
-    KeySystem = {
-        -- ↓ Optional. You can remove it.
-        Key = { "1234", "5678" },
-
-        Note = "Example Key System.",
-
-        -- ↓ Optional. You can remove it.
-        Thumbnail = {
-            Image = "rbxassetid://",
-            Title = "Thumbnail",
-        },
-
-        -- ↓ Optional. You can remove it.
-        URL = "YOUR LINK TO GET KEY (Discord, Linkvertise, Pastebin, etc.)",
-
-        -- ↓ Optional. You can remove it.
-        SaveKey = false, -- automatically save and load the key.
-
-        -- ↓ Optional. You can remove it.
-        -- API = {} ← Services. Read about it below ↓
-    },
 })
 ```
 
-**Short example:**
+### Window Parameters
 
-```luau
-local Window = WindUI:CreateWindow({
-    Title = "My Super Hub",
-    Icon = "door-open", -- lucide icon. optional
-    Author = "by .ftgs and .ftgs", -- optional
-})
-```
-#### Setting Window
-#### Set Background Image
-```luau
-Window:SetBackgroundImage("rbxassetid://id-here")
-```
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Title` | `string` | **Required** | Title displayed in the window topbar |
+| `Icon` | `string?` | `nil` | Icon name (Lucide, Craft, Geist, Solar), `rbxassetid://`, or URL |
+| `Author` | `string?` | `nil` | Subtitle/author displayed below the title |
+| `Folder` | `string?` | `nil` | Root folder name for config saving and key persistence |
+| `Size` | `UDim2?` | `UDim2.fromOffset(580, 460)` | Default window size |
+| `MinSize` | `Vector2?` | `Vector2.new(560, 350)` | Minimum resize dimensions |
+| `MaxSize` | `Vector2?` | `Vector2.new(850, 560)` | Maximum resize dimensions |
+| `Position` | `UDim2?` | `UDim2.new(0.5, 0, 0.5, 0)` | Starting window screen position |
+| `Transparent` | `boolean?` | `false` | Enables window background transparency |
+| `Theme` | `string?` | `"Dark"` | Initial theme name |
+| `Resizable` | `boolean?` | `true` | Allows users to drag-resize the window |
+| `SideBarWidth` | `number?` | `200` | Width of sidebar containing tabs |
+| `HideSearchBar` | `boolean?` | `true` | Hides the search bar in the tab sidebar |
+| `ScrollBarEnabled` | `boolean?` | `false` | Enables visible scrollbars on scrollable content |
+| `BackgroundImageTransparency` | `number?` | `0` | Transparency of background image (0 to 1) |
+| `Background` | `string \| table?` | `nil` | `rbxassetid://`, raw image URL, `video:`, or `WindUI:Gradient()` table |
+| `ShadowTransparency` | `number?` | `0.7` | Transparency of window drop shadow |
+| `Radius` | `number?` | `16` | Corner radius of the window frame |
+| `ElementsRadius` | `number?` | `nil` | Border radius for UI elements inside window |
+| `TopBarButtonIconSize` | `number?` | `16` | Pixel size of topbar button icons |
+| `ToggleKey` | `Enum.KeyCode?` | `nil` | Keyboard key to toggle window visibility |
+| `Acrylic` | `boolean?` | `false` | Enables frosted glass background blur effect |
+| `NewElements` | `boolean?` | `false` | Uses newer UI element styling |
+| `IgnoreAlerts` | `boolean?` | `false` | Skips confirmation dialog when closing |
+| `HidePanelBackground` | `boolean?` | `false` | Hides background panel in main content area |
+| `AutoScale` | `boolean?` | `true` | Automatically scales window to fit viewport |
+| `Topbar` | `table?` | `nil` | Topbar options (`Height`, `ButtonsType` = `"Default"` or `"Mac"`) |
+| `OpenButton` | `table?` | `nil` | Mobile/desktop minimize reopen button options |
+| `User` | `table?` | `nil` | User profile section in bottom-left (`Enabled`, `Anonymous`, `Callback`) |
+| `KeySystem` | `table?` | `nil` | Key system gating configuration |
 
-#### Set Background Image Transparency
-```luau
-Window:SetBackgroundImageTransparency(value: number) -- from 0  to 1
-```
+### Window Methods
 
-#### Set Toggle Key
-```luau
-Window:SetToggleKey(Enum.KeyCode.H)
-```
+#### Containers & Elements
+- `Window:Tab(TabConfig)`: Creates a new tab.
+- `Window:Section(SectionConfig)`: Creates a tab section in the sidebar.
+- `Window:Divider()`: Inserts a visual divider in the sidebar.
+- `Window:Tag(TagConfig)`: Adds a badge/tag in the topbar.
+- `Window:Dialog(DialogConfig)`: Opens a modal dialog.
 
-#### Set Transparency
-```luau
-Window:ToggleTransparency(true)
-```
+#### Topbar Controls
+- `Window:CreateTopbarButton(Name, Icon, Callback, LayoutOrder?, IconThemed?, Color?, IconSize?)`: Adds a custom button to the window topbar.
+- `Window:DisableTopbarButtons(ButtonsTable)`: Disables specific topbar buttons.
+- `Window:EditOpenButton(Config)`: Updates the OpenButton properties.
 
-#### Set Resizable
-```luau
-Window:IsResizable(false)
-```
-#### Edit 'OpenButton'
-```luau
-Window:EditOpenButton({
-    Title = "Open Example UI",
-    Icon = "monitor",
-    CornerRadius = UDim.new(0,16),
-    StrokeThickness = 2,
-    Color = ColorSequence.new( -- gradient
-        Color3.fromHex("FF0F7B"),
-        Color3.fromHex("F89B29")
-    ),
-    OnlyMobile = false,
-    Enabled = true,
-    Draggable = true,
-})
-```
-#### Edit Topbar Buttons
-#### Disable Topbar Buttons
-```luau
-Window:DisableTopbarButtons({
-    "Close",
-    "Minimize",
-    "Fullscreen",
-})
-```
+#### Window State & Appearance
+- `Window:Open()`: Opens the window with animation.
+- `Window:Close()`: Closes the window with animation.
+- `Window:Toggle()`: Toggles window visibility.
+- `Window:Destroy()`: Destroys the window GUI.
+- `Window:SetTitle(Title)`: Dynamically updates the window title.
+- `Window:SetAuthor(Author)`: Updates the author/subtitle text.
+- `Window:SetIcon(Icon)`: Updates the window icon.
+- `Window:SetIconSize(Size)`: Changes the window icon size.
+- `Window:SetSize(UDim2)`: Updates window size.
+- `Window:SetToggleKey(KeyCode)`: Updates the visibility toggle key.
+- `Window:SetTheme(ThemeName)`: Changes the window theme.
+- `Window:SetBackgroundImage(ImageId)`: Sets background image.
+- `Window:SetBackgroundImageTransparency(Number)`: Sets background image transparency.
+- `Window:SetBackgroundTransparency(Number)`: Sets window background transparency.
+- `Window:ToggleTransparency(Boolean)`: Toggles transparency mode.
+- `Window:SetPanelBackground(Visible)`: Shows or hides the main panel background.
+- `Window:SetUIScale(Scale)`: Sets UI scale factor.
+- `Window:GetUIScale()`: Returns current UI scale factor.
+- `Window:IsResizable(Boolean)`: Sets whether the window can be resized.
+- `Window:SetToTheCenter()`: Centers window on screen.
 
-#### Create Custom Topbar Buttons
-```luau
---                        ↓ Special name     ↓ Icon     ↓ Callback                         ↓ Order
-Window:CreateTopbarButton("MyCustomButton1", "bird",    function() print("clicked!") end,  990)
-```
-#### Configure User Icon
-#### Enable
-```luau
-Window.Icon:Enable()
-```
+#### Bulk Element Operations
+- `Window:UnlockAll()`: Unlocks all locked elements.
+- `Window:LockAll()`: Locks all elements in the window.
+- `Window:GetAll()`: Returns a table of all elements.
+- `Window:GetLocked()`: Returns a table of all locked elements.
+- `Window:GetUnlocked()`: Returns a table of all unlocked elements.
 
-#### Disable
-```luau
-Window.Icon:Disable()
-```
-
-#### Set Anonymous
-```luau
-Window.Icon:SetAnonymous(true) -- true or false
-```
-#### Other
-### Actions
-
-#### Open Window
-```luau
-Window:Open()
-```
-
-#### Close Window
-```luau
-Window:Close()
-```
-
-#### Toggle Window (open or close)
-```luau
-Window:Toggle()
-```
+#### Lifecycle Callbacks
+- `Window:OnOpen(Callback)`: Fires when the window opens.
+- `Window:OnClose(Callback)`: Fires when the window closes.
+- `Window:OnDestroy(Callback)`: Fires when the window is destroyed.
 
 ---
-
-### Triggers
-
-#### `:OnClose()`
-```luau
-Window:OnClose(function()
-    print("Window Closed")
-end)
-```
-
-#### `:OnOpen()`
-```luau
-Window:OnOpen(function()
-    print("Window Opened")
-end)
-```
-
-#### `:OnDestroy()`
-```luau
-Window:OnDestroy(function()
-    print("Window Destroyed")
-end)
-```
----
-
-### Elements
-
-#### Unlock All Elements
-```luau
-Window:UnlockAll()
-```
-
-#### Lock All Elements
-```luau
-Window:LockAll()
-```
-
-#### Get Locked Elements
-```luau
-Window:GetLocked()
-```
-
-#### Get Unlocked Elements
-```luau
-Window:Unlocked()
-```
-
-#### Get All Elements
-```luau
-Window.AllElements
-```
-
----
-
-### Other
-
-#### Set Window Icon Size
-```luau
-Window:SetIconSize(48) -- default is 20
-```
-
-#### Set Window Size
-```luau
-Window:SetSize(UDim2.fromOffset(600, 500))
-```
-
-#### Set Panel Background
-```luau
-Window:SetPanelBackground(0.5) -- sets panel background transparency
-```
-
----
-#### API
-### Window Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `UI Library` | Title of the window. |
-| `Icon` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the window. |
-| `IconSize` | `number` | `false` | `20` | Icon Size. |
-| `IconRadius` | `number` | `false` | `nil` | Corner radius for the window icon |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
-| `Author` | `string` | `false` | `nil` | Name of the UI author. |
-| `Folder` | `string` | `true` | `nil` | Folder name for saving data (like keys, URL images). |
-| `Debug` | `boolean` | `false` | `false` | Enable debug mode |
-| `Size` | `UDim2` | `false` | `UDim2.new(0,580,0,460)` | Custom size for the window. |
-| `MinSize` | `Vector2` | `false` | `Vector2.new(560, 350)` | Minimum window size |
-| `MaxSize` | `Vector2` | `false` | `Vector2.new(850, 560)` | Maximal window size |
-| `Transparent` | `boolean` | `false` | `false` | Whether the window background is transparent. |
-| `Theme` | `string` | `false` | `Dark` | Theme style (e.g., Dark, Light). |
-| `Resizable` | `boolean` | `false` | `true` | Can or cannot resize ui |
-| `SideBarWidth` | `number` | `false` | `200` | Width of the sidebar. |
-| `Background` | `string` | `false` | `nil` | Background image ID. |
-| `BackgroundImageTransparency` | `number` | `false` | `0` | Changes Background Image Transparency |
-| `HideSearchBar` | `boolean` | `false` | `false` | Hides Searchbar |
-| `HidePanelBackground` | `boolean` | `false` | `false` | Hides Panel Background |
-| `ScrollBarEnabled` | `boolean` | `false` | `false` | Enable ScrollBar |
-| `User` | `table` | `false` | `{}` | Settings related to the user system. |
-| `KeySystem` | `table` | `false` | `{}` | Settings for key authentication system. |
-| `OpenButton` | `table` | `false` | `{}` | Editing the openbutton |
-
-### User Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Enabled` | `boolean` | `true` | `false` | Enable the user system. |
-| `Anonymous` | `boolean` | `false` | `false` | Hide your nickname and avatar. |
-| `Callback` | `function` | `false` | `nil` | Function executed on user interaction. |
-
-### KeySystem Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Key` | `table` | `true` | `{}` | List of valid keys. |
-| `Note` | `string` | `false` | `nil` | Additional note or instructions. |
-| `Thumbnail` | `table` | `false` | `{}` | Thumbnail image and title. |
-| `URL` | `string` | `false` | `nil` | URL to link for key system. |
-| `SaveKey` | `boolean` | `false` | `false` | Save the entered key locally. |
-| `API` | `table` | `false` | `nil` | Connect with your key system services |
-
-### Thumbnail Options (inside KeySystem)
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Image` | `string` | `true` | `nil` | Thumbnail image ID. |
-| `Title` | `string` | `false` | `nil` | Title shown with thumbnail. |
-| `Width` | `number` | `false` | `240` | Thumbnail image width |
 
 ## Key System
 
-Adding the key system.
+The Key System gates access to the window behind key validation. When enabled, WindUI renders a modal key dialog and pauses window creation until a valid key is provided.
 
-### Key System
-The Key System is created in :CreateWindow()
-
-#### Available Services
-At the moment, there are only:
-- [PlatoBoost](https://platoboost.com)
-- [Panda Development](https://pandadevelopment.net/)
-- [Luarmor](https://luarmor.net/)
-
-More services will be soon.
-
-**Example:**
-
+### Configuration Example
 ```luau
 local Window = WindUI:CreateWindow({
-    -- ...
-
-    KeySystem = {                                                               --
-        Note = "Example Key System. With platoboost, etc.",                     --
-        API = {                                                                 --
-            { -- PlatoBoost
-                --[[ Here you can write your title, description, and icon --]]  --
-                Title = "Platoboost",-- optional . you can remove it
-                Desc = "Click to copy.", -- optional . you can remove it
-                Icon = "rbxassetid://", -- optional . you can remove it
-
-                Type = "platoboost", -- type
-                ServiceId = 1234, -- service id
-                Secret = "platoboost-secret", -- platoboost secret
-            },                                                                  --
-            { -- Panda development
-                Type = "pandadevelopment", -- type
-                ServiceId = "myServiceId", -- service id
-            },                                                                  --
-        },                                                                      --
-    },                                                                          --
-})
-```
-
-**Platoboost:**
-
-```luau
-local Window = WindUI:CreateWindow({
-    -- ...
-
-    KeySystem = {                                                   --
-        Note = "Example Key System. With platoboost.",              --
-        API = {                                                     --
-            { -- PlatoBoost
-                Type = "platoboost",                                --
-                ServiceId = 1234, -- service id
-                Secret = "platoboost-secret", -- platoboost secret
-            },                                                      --
-        },                                                          --
-    },                                                              --
-})
-```
-
-**Panda development:**
-
-```luau
-local Window = WindUI:CreateWindow({
-    -- ...
-
-    KeySystem = {                                                   --
-        Note = "Example Key System. With pandadevelopment.",        --
-        API = {                                                     --
-            { -- pandadevelopment
-                Type = "pandadevelopment", -- type
-                ServiceId = "myServiceId", -- service id
-            },                                                      --
-        },                                                          --
-    },                                                              --
-})
-```
-
-**Luarmor:**
-
-```luau
-local Window = WindUI:CreateWindow({
-    -- ...
-
-    KeySystem = {                                                   --
-        Note = "Example Key System. With luarmor.",                 --
-        API = {                                                     --
-            { -- luarmor
-                Type = "luarmor", -- type
-                ScriptId = 1234, -- script id
-                Discord = "Discord URL", -- DISCORD server link
-            },                                                      --
-        },                                                          --
-    },                                                              --
-})
-```
-
----
-
-#### Add your service.
-You can also add your own services if you can't wait for the new update.
-**With tips:**
-
-```luau
---              ↓ Change this to your service (like `luarmor`, `platoboost`, `keyguardian`)
-WindUI.Services.mysuperservicetogetkey = {
-    Name = "My Super Service",
-    Icon = "droplet", -- <-- lucide or rbxassetid or raw link to img
-
-    Args = { "ServiceId", "SuperId" }, --      <- \
-                                       --         |
-    New = function(ServiceId, SuperId) -- <------ | Args!!!!!!!!!!!!
-        function validateKey(key) -- <--- this too important!!!
-            -- your function to validate key
-            -- see examples at src/utils/ in WindUI Repo
-
-            if not key then
-                return false, "Key is invalid!"
-
-            end
-
-            return true, "Key is valid!"
-        end
-
-        function copyLink()
-            return setclipboard("link to key system service.")
-        end
-
-        return {
-            --↓↓ do not change this!!
-            Verify = validateKey, -- <-- important!!!
-            Copy = copyLink -- <-- important!!!
-        }
-    end
-}
-```
-
-**Without tips:**
-
-```luau
-WindUI.Services.mysuperservicetogetkey = {
-    Name = "My Super Service",
-    Icon = "droplet",
-
-    Args = { "ServiceId", "SuperId" },
-
-    New = function(ServiceId, SuperId)
-        function validateKey(key)
-            -- your function to validate key
-            -- see examples at src/utils/ in WindUI Repo
-
-            if not key then
-                return false, "Key is invalid!"
-            end
-
-            return true, "Key is valid!"
-        end
-
-        function copyLink()
-            return setclipboard("link to key system service.")
-        end
-
-        return {
-            Verify = validateKey,
-            Copy = copyLink
-        }
-    end
-}
-```
-
-#### Use your service.
-Now your can use your service.
-```luau
-local Window = WindUI:CreateWindow({
-    -- ...
+    Title = "Admin Hub",
+    Folder = "MyHubData", -- required when SaveKey is enabled
 
     KeySystem = {
-        Note = "...",
-        API = {
-            {
-                Type = "mysuperservicetogetkey",
-                ServiceId = 1234",
-                SuperId = 1234",
-            },
+        Title = "Access Required",
+        Note = "Join our Discord to obtain a key.",
+        URL = "https://discord.gg/example",
+        SaveKey = true,
+
+        KeyValidator = function(enteredKey)
+            return enteredKey == "supersecretkey"
+        end,
+
+        Thumbnail = {
+            Image = "rbxassetid://1234567890",
+            Title = "Premium Access",
+            Width = 200,
         },
     },
 })
 ```
 
-Yes, I know it's difficult to understand.
+### Key System Parameters
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `KeyValidator` | `function?` | Custom validator function: `function(key) return key == "valid" end`. Recommended. |
+| `Key` | `string \| table?` | Accepted key string or array of strings. Deprecated in favor of `KeyValidator`. |
+| `SaveKey` | `boolean?` | Persists valid key to `<Folder>/<hwid>.key` for subsequent launches. |
+| `Title` | `string?` | Title displayed in the key dialog. Defaults to window title. |
+| `Note` | `string?` | Informational note displayed to users (supports RichText). |
+| `URL` | `string?` | Link copied to clipboard when the user clicks "Get Key". |
+| `Thumbnail` | `table?` | Decorative image panel (`Image`, `Title`, `Width`). |
+| `API` | `table?` | Third-party key verification services configuration. |
+
+### Validation Flow & SaveKey
+1. If `SaveKey = true` and `<Folder>/<hwid>.key` exists on disk, WindUI silently validates the saved key. If valid, the window opens immediately without showing the dialog.
+2. Otherwise, the key modal dialog is presented.
+3. Upon entering a valid key, it is written to `<Folder>/<hwid>.key` and the window opens.
+4. If invalid, an error notification is shown and the dialog remains open.
+
+### Third-Party Key Services (API)
+
+WindUI supports external key systems.
+
+#### Panda Development
+The validation endpoint is updated to the current Pandauth API:
+```luau
+KeySystem = {
+    API = {
+        Type = "PandaDevelopment",
+        Service = "your_service_id",
+    },
+}
+```
+Validation URL: `https://api.pandauth.com/api/v1/keys/validate`
+
+#### Platoboost
+```luau
+KeySystem = {
+    API = {
+        Type = "Platoboost",
+        Service = "your_service_id",
+    },
+}
+```
+
+---
 
 ## Tab
 
-Creating Tab.
+Tabs organize content into separate navigable pages in the sidebar.
 
-### Creating Tab
-
+### Creating a Tab
 ```luau
 local Tab = Window:Tab({
-    Title = "Tab Title",
-    Icon = "bird", -- optional
+    Title = "Combat",
+    Desc = "Combat and aim settings",
+    Icon = "swords",
+    IconColor = Color3.fromRGB(255, 100, 100),
+    IconShape = "Square", -- "Square" or "Circle"
+    IconThemed = false,
     Locked = false,
+    ShowTabTitle = true,
+    TabTitleAlign = "Left", -- "Left", "Center", or "Right"
+    Border = true,
+
+    CustomEmptyPage = {
+        Icon = "lucide:smile",
+        IconSize = 48,
+        Title = "No Features Here",
+        Desc = "This tab currently has no elements.",
+    },
 })
 ```
 
-#### Select Tab
-```luau
-Tab:Select() -- Select Tab
-```
+### Tab Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Title` | `string` | `"Tab"` | Tab title displayed in the sidebar |
+| `Desc` | `string?` | `nil` | Description shown as a hover tooltip in the sidebar |
+| `Icon` | `string?` | `nil` | Lucide icon name, `rbxassetid://`, or image URL |
+| `IconColor` | `Color3?` | `nil` | Custom color for the tab icon |
+| `IconShape` | `string?` | `nil` | Icon shape: `"Square"` or `"Circle"` |
+| `IconThemed` | `boolean?` | `false` | Whether to apply theme colors to the icon |
+| `Locked` | `boolean?` | `false` | Prevents user interaction with the tab when true |
+| `ShowTabTitle` | `boolean?` | `false` | Displays the tab title at the top of the content page |
+| `TabTitleAlign` | `string?` | `"Left"` | Title alignment when `ShowTabTitle` is enabled (`"Left"`, `"Center"`, `"Right"`) |
+| `Border` | `boolean?` | `false` | Adds a visual outline border around the tab container |
+| `CustomEmptyPage` | `table?` | `nil` | Custom empty page display (`Icon`, `IconSize`, `Title`, `Desc`) |
+
+### Tab Methods
+- `Tab:Select()`: Selects and opens the tab.
+- `Tab:SetTitle(Title)`: Updates tab title.
+- `Tab:SetDesc(Description)`: Updates tab description tooltip.
+- `Tab:Lock()`: Disables tab interaction.
+- `Tab:Unlock()`: Enables tab interaction.
+- `Tab:ScrollToTheElement(Index)`: Scrolls the tab content directly to the target element index.
 
 ---
-#### API
-### Tab Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Tab` | Title of the Tab. |
-| `Icon` | `string` | `false` | `nil` | Lucide or rbxassetid icon or URL for the Tab. |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
-| `Locked` | `boolean` | `false` | `false` | Locking the Tab. |
-| `CustomEmptyPage` | `Instance` | `false` | `nil` | Custom page displayed when tab has no elements |
-| `TabTitleAlign` | `string` | `false` | `nil` | Alignment of the tab title (applies to ShowTabTitle) |
 
 ## Tab Section
 
-Creating Section for the Tabs and Editing it.
-
-### Creating Section for the Tabs
+Tab sections group multiple tabs together under a labeled category in the sidebar.
 
 ```luau
-local Section = Window:Section({
-    Title = "Section for the tabs",
-    Icon = "bird",
+local TabSection = Window:Section({
+    Title = "Settings & Config",
+    Icon = "settings",
     Opened = true,
 })
+
+local GeneralTab = TabSection:Tab({ Title = "General", Icon = "sliders" })
+local AdvancedTab = TabSection:Tab({ Title = "Advanced", Icon = "terminal" })
 ```
 
-Tab sections have two states:
-1. Just a text (when there are no tabs),
-2. a state where it can be opened/closed (when there are tabs inside)
+### Tab Section Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Title` | `string` | `"Section"` | Category title in sidebar |
+| `Icon` | `string?` | `nil` | Icon for section header |
+| `IconThemed` | `boolean?` | `false` | Applies theme color to the icon |
+| `Opened` | `boolean?` | `true` | Whether section is expanded by default |
 
 ---
-#### API
-### Section Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Section` | Title of the Section. |
-| `Icon` | `string` | `false` | `nil` | Lucide or rbxassetid icon or URL for the Tab. |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
-| `Opened` | `boolean` | `false` | `false` | Opened section |
 
 ## Dialog
 
-Dialog component for WindUI.
-
-### Creating Dialog
+Dialogs are modal prompt overlays that block interaction with the rest of the window until dismissed.
 
 ```luau
-local Dialog = Window:Dialog({
-    Icon = "bird",
-    Title = "Dialog Title",
-    Content = "Content Text",
+Window:Dialog({
+    Title = "Reset Settings",
+    Content = "Are you sure you want to reset all configurations?",
+    Icon = "alert-triangle",
+    IconThemed = true,
     Buttons = {
         {
             Title = "Confirm",
+            Icon = "check",
+            Variant = "Destructive", -- "Primary", "Secondary", "Tertiary", "Destructive"
             Callback = function()
-                print("Confirmed!")
+                print("Reset confirmed")
             end,
         },
         {
             Title = "Cancel",
+            Variant = "Secondary",
             Callback = function()
-                print("Cancelled!")
+                print("Reset cancelled")
             end,
         },
     },
 })
 ```
 
-#### Show Dialog
-```luau
-Dialog:Show()
-```
-
-#### Close Dialog
-```luau
-Dialog:Close()
-```
-
 ---
-
-### API
-
-### Dialog Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Dialog` | Title text of the dialog. |
-| `Icon` | `string` | `false` | `nil` | Dialog Icon |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
-| `Content` | `string` | `true` | `nil` | Main description inside the dialog. |
-| `Buttons` | `table` | `true` | `{}` | List of buttons with their titles and callbacks. |
-
-### Button Options (inside dialog)
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Button` | Button title text. |
-| `Icon` | `string` | `false` | `nil` | Lucide icon for the Button. |
-| `Variant` | `string` | `false` | `Primary` | Variants: (Primary, Secondary, Tertiary) |
-| `Callback` | `function` | `false` | `nil` | Function executed when button is clicked. |
 
 ## Popup
 
-Creating Popup.
-
-### Creating Popup
+Popups are standalone floating modal windows for notices, announcements, or multi-button user prompts.
 
 ```luau
 WindUI:Popup({
-    Title = "Popup Title",
-    Icon = "info",
-    Content = "Popup content",
+    Title = "Welcome to v1.6.66",
+    Icon = "sparkles",
+    Content = "Thank you for using our hub. Check out the changelog for new features!",
     Buttons = {
         {
-            Title = "Cancel",
+            Title = "Dismiss",
+            Variant = "Secondary",
             Callback = function() end,
-            Variant = "Tertiary",
         },
         {
-            Title = "Continue",
-            Icon = "arrow-right",
-            Callback = function() end,
+            Title = "Join Discord",
+            Icon = "external-link",
             Variant = "Primary",
-        }
-    }
+            Callback = function()
+                setclipboard("https://discord.gg/example")
+            end,
+        },
+    },
 })
 ```
 
 ---
-#### API
-### Popup Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Popup` | Title of the Popup. |
-| `Icon` | `string` | `false` | `nil` | Lucide or rbxassetid or URL icon for the Popup. |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon themed |
-| `Content` | `string` | `true` | `Content` | Content for information or warnings. |
-| `Buttons` | `table` | `true` | `{}` | List of button objects for the Popup. |
-
-### Button Options (inside Popup)
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Button` | Title of the Button. |
-| `Icon` | `string` | `false` | `nil` | Lucide icon for the Button. |
-| `Variant` | `string` | `true` | `Primary` | Style variant: Primary, Secondary, or Tertiary. |
-| `Callback` | `function` | `false` | `nil` | Function to execute when the button is clicked. |
 
 ## Tag
 
-Creating Tag.
+Tags are badges placed in the window topbar for version labels, statuses, or build channels.
 
-### Creating Tag
 ```luau
-Window:Tag({
-    Title = "v1.6.6",
-    Icon = "github",
-    Color = Color3.fromHex("#30ff6a"),
-    Radius = 0, -- from 0 to 13
-    Border = false, -- adds border to the tag
+local VersionTag = Window:Tag({
+    Title = "v1.6.66",
+    Color = Color3.fromHex("#0091FF"),
+    Radius = 6,
 })
+
+-- Update or destroy
+VersionTag:SetTitle("v1.6.66-PRO")
+-- VersionTag:Destroy()
 ```
 
-#### Destroy Tag
-```luau
-Tag:Destroy()
-```
-#### API
-### Tag Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Tag` | Title of the Tag. |
-| `Icon` | `string` | `false` | `nil` | Icon of the Tag. |
-| `Color` | `Color3` | `false` | `Color3.fromHex("#315dff")` | Tag Color. |
-| `Radius` | `number` | `false` | `13` | Tag Radius (0–13) |
-| `Border` | `boolean` | `false` | `false` | Adds border to the tag |
+---
 
 ## Notification
 
-Creating Notification.
+Toast notifications slide onto the screen and automatically dismiss after a duration.
 
-### Creating Notification
 ```luau
 WindUI:Notify({
-    Title = "Notification Title",
-    Content = "Notification Content example!",
-    Duration = 3, -- 3 seconds
-    Icon = "bird",
+    Title = "Configuration Saved",
+    Content = "Your settings have been saved to storage.",
+    Icon = "check-circle",
+    Duration = 4,
 })
 ```
-#### API
-### Notification Options
 
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Button` | Title of the Notification. |
-| `Content` | `string` | `false` | `nil` | Content of the Notification. |
-| `Duration` | `number` | `false` | `5` | Duration of the Notification. |
-| `CanClose` | `boolean` | `false` | `false` | Whether the notification can be dismissed by the user |
-| `Icon` | `string` | `false` | `nil` | Icon of the Notification. |
-| `IconThemed` | `boolean` | `false` | `false` | Will color the icon to match the Theme, if you don\'t use Lucide icons but use other vector icons (rbxassetid or URL) |
+---
 
 ## Divider
 
-Creating Divider.
-
-### Creating Divider
-
-Divider can be created in the [Window](/docs/window) (next to the Tabs) and in the [Tab](/docs/tab) (inside)
-
-```luau
-Window:Divider()
-```
+Creates a visual separator line between UI elements in a tab or in the sidebar.
 
 ```luau
 Tab:Divider()
+-- or
+Window:Divider()
 ```
+
+---
 
 ## Space
 
-Creating Space.
-
-### Creating Space
-
-Space can be created in the [Window](/docs/window) (next to the Tabs) and in the [Tab](/docs/tab) (inside)
+Adds vertical spacing between elements.
 
 ```luau
-Window:Space()
+Tab:Space({
+    Size = 12,
+})
 ```
 
-```luau
-Tab:Space()
-```
+---
 
 ## Button
 
-Creating Button and Editing it.
-
-### Creating Button
-
-**Default:**
+Clickable action button with icon, color tint, alignment, description, and locked state support.
 
 ```luau
 local Button = Tab:Button({
-    Title = "Button",
-    Desc = "Test Button",
+    Title = "Execute Script",
+    Desc = "Runs the primary automation loop",
+    Icon = "play",
+    Color = Color3.fromHex("#305dff"),
+    Justify = "Between", -- "Left", "Center", "Right", "Between"
+    IconAlign = "Right", -- "Left" or "Right"
     Locked = false,
+    LockedTitle = "Locked",
     Callback = function()
-        -- ...
-    end
+        print("Action executed")
+    end,
 })
-```
 
-**Advanced:**
+-- Visual sweep animation
+Button:Highlight()
 
-```luau
-local Button = Tab:Button({
-    Title = "Advanced Button",
-    Color = Color3.fromHex("#a2ff30"), -- paint the button
-    Justify = "Center", -- align items in the center (Center or Between or Left or Right)
-    IconAlign = "Left", -- Left or Right of the text
-    Icon = "", -- removing icon
-    Callback = function()
-        -- ...
-    end
-})
-```
-
-#### Set Title
-```luau
-Button:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Button:SetDesc("Description Example")
-```
-
-#### Lock Element
-```luau
+-- Methods
+Button:SetTitle("New Title")
+Button:SetDesc("Updated description")
 Button:Lock()
-```
-
-#### Unlock Element
-```luau
 Button:Unlock()
-```
-
-#### Destroy Element
-```luau
 Button:Destroy()
 ```
 
 ---
-#### API
-### Button Options
 
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Button` | Title of the Button. |
-| `Desc` | `string` | `false` | `nil` | Description of the Button. |
-| `Color` | `Color3` | `false` | `nil` | Button Color |
-| `Justify` | `string` | `false` | `Between` | Items horizontal align |
-| `IconAlign` | `string` | `false` | `Right` | Icon align |
-| `IconColor` | `Color3` | `false` | `nil` | Color of the Button icon |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Button |
+## Toggle
 
-## Code
-
-Creating Code and Editing it.
-
-### Creating Code
-
-```lua
-local Code = Tab:Code({
-    Title = "Code",
-    Code = [[print("Hello World!")]]
-})
-```
-
-#### Set Code
-```lua
-Code:SetCode([[print("New code!")]])
-```
-
-#### Destroy Code
-```lua
-Code:Destroy()
-```
-
-#### `:OnCopy()`
-```lua
-Code:OnCopy(function()
-    print("Code '" .. Code.Title .. '" Copied!")
-end)
-```
-
----
-#### API
-### Code Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Code` | Title of the Code. |
-| `Code` | `string` | `true` | `nil` | Code. |
-
-## Colorpicker
-
-Creating Colorpicker and Editing it.
-
-### Creating Colorpicker
+Binary on/off control with smooth animations, switch or checkbox rendering, and config saving.
 
 ```luau
-local Colorpicker = Tab:Colorpicker({
-    Title = "Colorpicker",
-    Desc = "Colorpicker Description",
-    Default = Color3.fromRGB(0, 255, 0),
-    Transparency = 0,
+local Toggle = Tab:Toggle({
+    Title = "Auto Farm",
+    Desc = "Automatically collects resources",
+    Icon = "power",
+    Value = false,
+    Type = "Toggle", -- "Toggle" or "Checkbox"
     Locked = false,
-    Callback = function(color)
-        print("Background color: " .. tostring(color))
-    end
+    Flag = "auto_farm",
+    Callback = function(state)
+        print("Auto Farm:", state)
+    end,
 })
+
+-- Methods
+Toggle:SetValue(true)
+Toggle:SetTitle("Auto Farm (Active)")
+Toggle:SetDesc("Running in background")
+Toggle:Lock()
+Toggle:Unlock()
+Toggle:Destroy()
 ```
-
-#### Set Title
-```luau
-Colorpicker:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Colorpicker:SetDesc("Description Example")
-```
-
-#### Lock Element
-```luau
-Colorpicker:Lock()
-```
-
-#### Unlock Element
-```luau
-Colorpicker:Unlock()
-```
-
-#### Destroy Element
-```luau
-Colorpicker:Destroy()
-```
-
----
-#### API
-### Colorpicker Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Colorpicker` | Title of the Colorpicker. |
-| `Desc` | `string` | `false` | `nil` | Description of the Colorpicker. |
-| `Default` | `Color3` | `true` | `nil` | Default color of the Colorpicker |
-| `Transparency` | `number` | `true` | `nil` | Transparency of the Colorpicker `(0-1)` Remove this if you don't want to adjust the transparency. |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Colorpicker |
-
-## Dropdown
-
-Creating Dropdown and Editing it.
-
-### Creating Dropdown
-
-#### Dropdown
-
-**Multi Dropdown:**
-
-```luau
-local Dropdown = Tab:Dropdown({
-    Title = "Dropdown (Multi)",
-    Desc = "Dropdown Description",
-    Values = { "Category A", "Category B", "Category C" },
-    Value = { "Category A" },
-    Multi = true,
-    AllowNone = true,
-    Callback = function(option)
-        -- option is a table: { "Category A", "Category B" }
-        print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option))
-    end
-})
-```
-
-**No Multi Dropdown:**
-
-```luau
-local Dropdown = Tab:Dropdown({
-    Title = "Dropdown",
-    Desc = "Dropdown Description",
-    Values = { "Category A", "Category B", "Category C" },
-    Value = "Category A",
-    Callback = function(option)
-        print("Category selected: " .. option)
-    end
-})
-```
-
-**Advanced Dropdown:**
-
-```luau
-local Dropdown = Tab:Dropdown({
-    Title = "Advanced Dropdown",
-    Desc = "Dropdown Description",
-    Values = {
-        {
-            Title = "Category A",
-            Icon = "bird"
-        },
-        {
-            Title = "Category B",
-            Icon = "house"
-        },
-        {
-            Title = "Category C",
-            Icon = "droplet"
-        },
-    },
-    Value = "Category A",
-    Callback = function(option)
-        print("Category selected: " .. option.Title .. " with icon " .. option.Icon)
-    end
-})
-```
-
-**Advanced Dropdown 2:**
-
-```luau
-local Dropdown = Tab:Dropdown({
-    Title = "Advanced Dropdown 2 (example)",
-    Values = {
-        {
-            Title = "New file",
-            Desc = "Create a new file",
-            Icon = "file-plus",
-            Callback = function()
-                print("Clicked 'New File'")
-            end
-        },
-        {
-            Title = "Copy link",
-            Desc = "Copy the file link",
-            Icon = "copy",
-            Callback = function()
-                print("Clicked 'Copy link'")
-            end
-        },
-        {
-            Title = "Edit file",
-            Desc = "Allows you to edit the file",
-            Icon = "file-pen",
-            Callback = function()
-                print("Clicked 'Edit file'")
-            end
-        },
-        { Type = "Divider", },
-        {
-            Title = "Delete file",
-            Desc = "Permanently delete the file",
-            Icon = "trash",
-            Callback = function()
-                print("Clicked 'Delete file'")
-            end
-        },
-    }
-})
-```
-
-#### Set Title
-```luau
-Dropdown:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Dropdown:SetDesc("Description Example")
-```
-
-#### Select value
-- For default Dropdown
-```luau
-Dropdown:Select("Category B")
-```
-- For Multi Dropdown
-```luau
-Dropdown:Select({"Category B", "Category C"})
-```
-
-#### Refresh Values (Update)
-```luau
-Dropdown:Refresh({ "New Category A", "New Category B" })
-```
-
-#### Lock Element
-```luau
-Dropdown:Lock()
-```
-
-#### Unlock Element
-```luau
-Dropdown:Unlock()
-```
-
-#### Destroy Element
-```luau
-Dropdown:Destroy()
-```
-
----
-#### API
-### Dropdown Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Dropdown` | Title of the Dropdown. |
-| `Desc` | `string` | `false` | `nil` | Description of the Dropdown. |
-| `Value` | `string or table (for multi)` | `true` | `nil` | Value of the Dropdown |
-| `Values` | `table` | `true` | `{}` | Values to select in the Dropdown |
-| `AllowNone` | `boolean` | `false` | `false` | Allow None selected |
-| `SearchBarEnabled` | `boolean` | `false` | `false` | Enable Search |
-| `Multi` | `boolean` | `false` | `false` | Select multiple values |
-| `IconSize` | `number` | `false` | `nil` | Size of the dropdown icons |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Dropdown |
-
-## Input
-
-Creating Input and Editing it.
-
-### Creating Input
-
-```luau
-local Input = Tab:Input({
-    Title = "Input",
-    Desc = "Input Description",
-    Value = "Default value",
-    InputIcon = "bird",
-    Type = "Input", -- or "Textarea"
-    Placeholder = "Enter text...",
-    Callback = function(input)
-        print("text entered: " .. input)
-    end
-})
-```
-
-#### Set Title
-```luau
-Input:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Input:SetDesc("Description Example")
-```
-
-#### Set Input value
-```luau
-Input:Set("New value")
-```
-
-#### Set Input Placeholder
-```luau
-Input:SetPlaceholder("New Placeholder")
-```
-
-#### Lock Element
-```luau
-Input:Lock()
-```
-
-#### Unlock Element
-```luau
-Input:Unlock()
-```
-
-#### Destroy Element
-```luau
-Input:Destroy()
-```
-
----
-#### API
-### Input Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Input` | Title of the Input. |
-| `Desc` | `string` | `false` | `nil` | Description of the Input. |
-| `Value` | `string` | `false` | `nil` | Default value of the Input |
-| `Placeholder` | `string` | `true` | `nil` | Placeholder Text of the Input |
-| `Type` | `string` | `false` | `Input` | Type of input (`Input`, `Textarea`, or `Default`) |
-| `InputIcon` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the Input |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Input |
-
-## Keybind
-
-Creating Keybind and Editing it.
-
-### Creating Keybind
-
-```luau
-local Keybind = Tab:Keybind({
-    Title = "Keybind",
-    Desc = "Keybind to open ui",
-    Value = "G",
-    Callback = function(v)
-        Window:SetToggleKey(Enum.KeyCode[v])
-    end
-})
-```
-
-#### Set Title
-```luau
-Keybind:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Keybind:SetDesc("Description Example")
-```
-
-#### Lock Element
-```luau
-Keybind:Lock()
-```
-
-#### Unlock Element
-```luau
-Keybind:Unlock()
-```
-
-#### Destroy Element
-```luau
-Keybind:Destroy()
-```
-
----
-#### API
-### Keybind Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Keybind` | Title of the Keybind. |
-| `Desc` | `string` | `false` | `nil` | Description of the Keybind. |
-| `Value` | `string` | `true` | `F` | Default value of the Keybind |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Keybind |
-
-## Paragraph
-
-Creating Paragraph and Editing it.
-
-### Creating Paragraph
-
-```luau
-local Paragraph = Tab:Paragraph({
-    Title = "Paragraph with Image, Thumbnail, Buttons",
-    Desc = "Test Paragraph",
-    Color = "Red",
-    Image = "",
-    ImageSize = 30,
-    Thumbnail = "",
-    ThumbnailSize = 80,
-    Locked = false,
-    Buttons = {
-        {
-            Icon = "bird",
-            Title = "Button",
-            Callback = function() print("1 Button") end,
-        }
-    }
-})
-```
-
-#### Set Title
-```luau
-Paragraph:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Paragraph:SetDesc("DescriptionExample")
-```
-
-#### `:SetImage(image: string, size: number)`
-```luau
-Paragraph:SetImage("rbxassetid://...")
-```
-
-#### `:SetThumbnail(image: string, size: number)`
-```luau
-Paragraph:SetThumbnail("rbxassetid://...")
-```
-
-#### Destroy Element
-```luau
-Paragraph:Destroy()
-```
-
----
-#### API
-### Paragraph Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Paragraph` | Title of the paragraph. |
-| `Desc` | `string` | `false` | `nil` | Description of the paragraph. |
-| `Image` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the paragraph. |
-| `ImageSize` | `number` | `false` | `22` | Image Size. |
-| `IconThemed` | `boolean` | `false` | `false` | Makes custom icon (image) themed |
-| `Thumbnail` | `string` | `false` | `nil` | Thumbnail of the paragraph. |
-| `ThumbnailSize` | `number` | `false` | `80` | Thumbnail height size. |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Buttons` | `table` | `false` | `{}` | List of buttons with their titles and callbacks. |
-
-### Button Options (inside paragraph)
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Button` | Button title text. |
-| `Icon` | `string` | `false` | `nil` | Lucide icon for the Button. |
-| `Callback` | `function` | `false` | `nil` | Function executed when button is clicked. |
-
-### Paragraph colors
-
-| Preview                                                | Name   | Hex       |
-| ------------------------------------------------------ | ------ | --------- |
-|     | Red    | `#e53935` |
-|     | Orange | `#f57c00` |
-|     | Green  | `#43a047` |
-|     | Blue   | `#039be5` |
-|  | White  | `#ffffff` |
-|     | Grey   | `#484848` |
-
-## Section
-
-Creating Section and Editing it.
-
-### Creating Section
-
-**Full example:**
-
-```luau
-local Section = Tab:Section({
-    Title = "Section",
-    Box = false,
-    FontWeight = "SemiBold",
-    TextTransparency = 0.05,
-    TextXAlignment = "Left",
-    TextSize = 17, -- Default Size
-    Opened = true,
-})
-```
-
-**Short example:**
-
-```luau
-local Section = Tab:Section({
-    Title = "Section",
-})
-```
-
-#### Set Title
-```luau
-Section:SetTitle("New Title Example")
-```
-
-#### Destroy Element
-```luau
-Section:Destroy()
-```
-
-Now you can create elements inside this section. e.g.
-**Button:**
-
-```luau
-Section:Button({ ... })
-```
-
----
-#### API
-### Section Options
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Section` | Title of the Section. |
-| `Box` | `boolean` | `false` | `false` | Section in the box |
-| `Boxborder` | `boolean` | `false` | `false` | Adds border to the box section |
-| `Desc` | `string` | `false` | `nil` | Description text for the section |
-| `FontWeight` | `string` | `false` | `SemiBold` | Title Font Weight |
-| `TextTransparency` | `number` | `false` | `0.05` | Text Transparency |
-| `TextXAlignment` | `string` | `false` | `nil` | Text Horizontal Alignment |
-| `TextSize` | `number` | `false` | `nil` | Text Size of the Section |
-| `Opened` | `boolean` | `false` | `false` | Will the section be open |
-
-## HStack
-
-Creating horizontal layout.
-
-### Creating HStack
-
-```luau
-local HStack = Tab:HStack({
-    Title = "HStack",
-    Elements = {
-        -- elements inside this stack
-    }
-})
-```
-
-> `HStack` arranges child elements horizontally. `Group` is an alias for `HStack`.
-
----
-
-## VStack
-
-Creating vertical layout.
-
-### Creating VStack
-
-```luau
-local VStack = Tab:VStack({
-    Title = "VStack",
-    Elements = {
-        -- elements inside this stack
-    }
-})
-```
-
-> `VStack` arranges child elements vertically.
 
 ---
 
 ## Slider
 
-Creating Slider and Editing it.
-
-### Creating Slider
+Numeric input slider with support for decimals, customizable width, tooltips, textbox entry, and range icons.
 
 ```luau
 local Slider = Tab:Slider({
-    Title = "Slider",
-    Desc = "Slider Description",
-
-    -- To make float number supported,
-    -- make the Step a float number.
-    -- example: Step = 0.1
-    Step = 1,
+    Title = "WalkSpeed",
+    Desc = "Adjust player movement speed",
     Value = {
-        Min = 20,
-        Max = 120,
-        Default = 70,
+        Min = 16,
+        Max = 150,
+        Default = 16,
+    },
+    Step = 1,
+    Width = 160,
+    IsTooltip = true, -- Displays value in a floating tooltip above thumb while dragging
+    IsTextbox = true, -- Allows manual numeric entry
+    Locked = false,
+    Flag = "player_walkspeed",
+    Icons = {
+        From = "footprints",
+        To = "zap",
     },
     Callback = function(value)
-        print(value)
-    end
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end,
 })
-```
 
-#### Set Title
-```luau
-Slider:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Slider:SetDesc("Description Example")
-```
-
-#### Set Slider value
-```luau
-Slider:Set(42)
-```
-
-#### Set Slider maximum value
-```luau
+-- Methods
+Slider:SetValue(32)
+Slider:SetMin(16)
 Slider:SetMax(200)
-```
-
-#### Set Slider minimum value
-```luau
-Slider:SetMin(10)
-```
-
-#### Lock Element
-```luau
+Slider:SetTitle("Movement Speed")
+Slider:SetDesc("Current speed modified")
 Slider:Lock()
-```
-
-#### Unlock Element
-```luau
 Slider:Unlock()
-```
-
-#### Destroy Element
-```luau
 Slider:Destroy()
 ```
 
 ---
-#### API
-### Slider Options
 
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Slider` | Title of the Slider. |
-| `Desc` | `string` | `false` | `nil` | Description of the Slider. |
-| `Value` | `table` | `true` | `{}` | Value of the Slider |
-| `Step` | `number` | `false` | `1` | Slider Moving step  |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Slider |
+## Input
 
-### Value Options (inside Slider)
-
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Min` | `number` | `true` | `0` | The minimum Value of the Slider |
-| `Max` | `number` | `true` | `nil` | The maximum Value of the Slider |
-| `Default` | `number` | `true` | `0` | The default Value of the Slider |
-
-## Toggle
-
-Creating Toggle and Editing it.
-
-### Creating Toggle
+Single-line text field or multi-line textarea with placeholder text, icon, and config integration.
 
 ```luau
-local Toggle = Tab:Toggle({
-    Title = "Toggle",
-    Desc = "Toggle Description",
-    Icon = "bird",
-    Type = "Checkbox",
-    Value = false, -- default value
-    Callback = function(state)
-        print("Toggle Activated" .. tostring(state))
-    end
+local Input = Tab:Input({
+    Title = "Target Player",
+    Desc = "Enter username or display name",
+    Icon = "user",
+    Type = "Default", -- "Default" (single-line) or "Textarea" (multi-line)
+    Placeholder = "Username...",
+    Value = "",
+    Locked = false,
+    Flag = "target_player",
+    Callback = function(text)
+        print("Target set to:", text)
+    end,
 })
-```
 
-#### Set Title
-```luau
-Toggle:SetTitle("Title Example")
-```
-
-#### Set Description
-```luau
-Toggle:SetDesc("Description Example")
-```
-
-#### Set Toggle value
-```luau
-Toggle:Set(true)
-```
-
-#### Lock Element
-```luau
-Toggle:Lock()
-```
-
-#### Unlock Element
-```luau
-Toggle:Unlock()
-```
-
-#### Destroy Element
-```luau
-Toggle:Destroy()
+-- Methods
+Input:SetValue("RobloxUser")
+Input:SetPlaceholder("Type username here...")
+Input:SetTitle("Selected Player")
+Input:Lock()
+Input:Unlock()
+Input:Destroy()
 ```
 
 ---
-#### API
-### Toggle Options
 
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Title` | `string` | `true` | `Toggle` | Title of the Toggle. |
-| `Desc` | `string` | `false` | `nil` | Description of the Toggle. |
-| `Value` | `boolean` | `false` | `false` | Default value of the Toggle |
-| `Type` | `string` | `false` | `Toggle` | Type of the Toggle (`Checkbox` or `Toggle`) |
-| `Icon` | `string` | `false` | `nil` | Lucide, rbxassetid, or URL icon for the Toggle |
-| `Locked` | `boolean` | `false` | `false` | Locks the Element |
-| `Callback` | `function` | `false` | `nil` | Callback of the Toggle |
+## Dropdown
 
-## Installation
+Select menu supporting single-choice, multi-choice, search filtering, dividers, and custom option items.
 
-Install WindUI source and Edit it.
-
-A Tutorial on how to install WindUI Source on your device and edit it.
-
-#### Clone Repository
-Clone the [WindUI](https://github.com/Footagesus/WindUI/) repository from GitHub to your local machine.
-```bash
-git clone https://github.com/Footagesus/WindUI.git
-```
-This command will create a copy of the WindUI project in your working directory, allowing you to modify and customize it as needed.
-
-#### Install Dependencies
-Navigate to the cloned directory and install npm packages:
-You need [aftman](https://github.com/LPGhatguy/aftman) to install darklua
-```bash
-cd WindUI
-
-npm install
-aftman install
-```
-
-#### Build WindUI
-Once everything is set up, you can build WindUI:
-
-- For development, run:
-```bash
-npm run dev
-```
-
-- For production build, run:
-```bash
-npm run build
-```
-
-- For development live-build, run:
-```bash
-npm run live-build
-```
-
-This will start a local build server at http://localhost:8642.
-It automatically build your changes and serves a ready-to-use development bundle, so you can instantly test it in Roblox without manual rebuilding.
-
-Usage in Roblox (exploit environment):
 ```luau
-loadstring(game:HttpGet("http://localhost:8642/dist/main.lua"))()
+local Dropdown = Tab:Dropdown({
+    Title = "Teleport Location",
+    Desc = "Select destination point",
+    Values = {
+        "Spawn",
+        "Shop",
+        "Arena",
+        "Bank",
+    },
+    Value = "Spawn",
+    Multi = false,
+    AllowNone = false,
+    SearchBarEnabled = true,
+    Locked = false,
+    Flag = "teleport_destination",
+    Callback = function(selected)
+        print("Selected location:", selected)
+    end,
+})
+
+-- Advanced rich items with icons and dividers
+local ActionDropdown = Tab:Dropdown({
+    Title = "Item Actions",
+    Values = {
+        { Title = "Use Item", Desc = "Consumes the item", Icon = "sparkles", Callback = function() end },
+        { Title = "Drop Item", Desc = "Drops onto ground", Icon = "arrow-down", Callback = function() end },
+        { Type = "Divider" },
+        { Title = "Delete Item", Desc = "Permanently removes", Icon = "trash", Callback = function() end },
+    },
+})
+
+-- Methods
+Dropdown:Select("Shop") -- or {"Spawn", "Arena"} when Multi = true
+Dropdown:Refresh({ "New Location 1", "New Location 2" })
+Dropdown:SetTitle("Updated Locations")
+Dropdown:Lock()
+Dropdown:Unlock()
+Dropdown:Highlight()
+Dropdown:Destroy()
 ```
+
+---
+
+## Keybind
+
+Interactive keybind listener supporting all Roblox `KeyCode` values.
+
+```luau
+local Keybind = Tab:Keybind({
+    Title = "Fly Toggle",
+    Desc = "Press key to toggle flying",
+    Value = "E", -- Enum.KeyCode name or key string
+    Locked = false,
+    Flag = "fly_keybind",
+    Callback = function(key)
+        print("Fly keybind pressed:", key)
+    end,
+})
+
+-- Methods
+Keybind:SetValue("F")
+Keybind:SetTitle("Fly Key")
+Keybind:Lock()
+Keybind:Unlock()
+Keybind:Destroy()
+```
+
+---
+
+## Colorpicker
+
+Color selection component opening an HSV picker dialog with optional transparency.
+
+```luau
+local Colorpicker = Tab:Colorpicker({
+    Title = "ESP Color",
+    Desc = "Color of the player highlight box",
+    Default = Color3.fromRGB(255, 0, 100),
+    Locked = false,
+    Flag = "esp_box_color",
+    Callback = function(color)
+        print("ESP color set to:", color)
+    end,
+})
+
+-- Methods
+Colorpicker:SetValue(Color3.fromRGB(0, 255, 120))
+Colorpicker:SetTitle("Box Color")
+Colorpicker:Lock()
+Colorpicker:Unlock()
+Colorpicker:Destroy()
+```
+
+---
+
+## Code
+
+Formatted code block display with syntax highlighting, custom theme token coloring, copy callback, and adjustable dimensions.
+
+```luau
+local CodeBlock = Tab:Code({
+    Title = "Generated Script",
+    Code = [[local Player = game.Players.LocalPlayer
+print("Hello, " .. Player.Name)]],
+    CodeSize = 18,
+    CanCopied = true,
+    Height = UDim.new(0, 200), -- or UDim.new(1, 0) for full page height
+
+    CodeTheme = {
+        numbers = Color3.fromHex("#FAB387"),
+        boolean = Color3.fromHex("#FAB387"),
+        operator = Color3.fromHex("#94E2D5"),
+        lua = Color3.fromHex("#CBA6F7"),
+        rbx = Color3.fromHex("#F38BA8"),
+        str = Color3.fromHex("#A6E3A1"),
+        comment = Color3.fromHex("#9399B2"),
+        null = Color3.fromHex("#F38BA8"),
+        call = Color3.fromHex("#89B4FA"),
+        self_call = Color3.fromHex("#89B4FA"),
+        local_property = Color3.fromHex("#CBA6F7"),
+    },
+
+    OnCopy = function()
+        print("Code copied to clipboard!")
+    end,
+})
+
+-- Methods
+CodeBlock:SetCode("print('Updated code')")
+CodeBlock:Destroy()
+```
+
+---
+
+## Paragraph
+
+Formatted text card with optional small icon, large thumbnail image, accent colors, and action buttons.
+
+```luau
+local Paragraph = Tab:Paragraph({
+    Title = "Changelog v1.6.66",
+    Desc = "Added ProgressBar element, updated Code parameters, and fixed Dropdown.Locked behavior.",
+    Image = "info",
+    ImageSize = 24,
+    Thumbnail = "rbxassetid://1234567890",
+    ThumbnailSize = 64,
+    Color = Color3.fromRGB(100, 200, 255),
+    Buttons = {
+        {
+            Title = "Copy Link",
+            Icon = "copy",
+            Variant = "Tertiary",
+            Callback = function()
+                setclipboard("https://github.com/Footagesus/WindUI")
+            end,
+        },
+    },
+})
+
+-- Methods
+Paragraph:SetTitle("New Announcement")
+Paragraph:SetDesc("Updated description text.")
+Paragraph:SetImage("bell", 20)
+Paragraph:SetThumbnail("rbxassetid://987654321", 48)
+Paragraph:Destroy()
+```
+
+---
+
+## Section
+
+Collapsible or boxed grouping container within a tab page.
+
+```luau
+local Section = Tab:Section({
+    Title = "Combat Features",
+    Desc = "Aimbot and triggerbot configuration",
+    Icon = "crosshair",
+    IconColor = Color3.fromRGB(255, 100, 100),
+    TextSize = 19,
+    TextXAlignment = "Left", -- "Left", "Center", or "Right"
+    Box = true, -- Adds an enclosed frame around the section
+    BoxBorder = true,
+    Opened = true, -- Expanded by default
+    FontWeight = Enum.FontWeight.SemiBold,
+    DescFontWeight = Enum.FontWeight.Medium,
+    TextTransparency = 0.05,
+    DescTextTransparency = 0.4,
+})
+
+-- Add elements directly into section
+Section:Toggle({ Title = "Aimbot Enabled" })
+Section:Slider({ Title = "FOV Radius", Value = { Min = 10, Max = 300, Default = 90 } })
+
+-- Methods
+Section:SetTitle("Weapon Configuration")
+Section:Destroy()
+```
+
+---
+
+## Image
+
+Displays visual content from asset IDs (`rbxassetid://`) or raw HTTPS image URLs.
+
+```luau
+Tab:Image({
+    Image = "https://example.com/preview.png",
+    AspectRatio = "16:9", -- "16:9", "1:1", "4:3", etc.
+    Radius = 12,
+})
+```
+
+---
+
+## HStack & VStack
+
+Modern stack layout containers that arrange child elements horizontally (`HStack`) or vertically (`VStack`). Replaces the deprecated `Group` element for building multi-column layouts.
+
+```luau
+-- Create a horizontal row
+local Row = Tab:HStack({
+    AutoSpace = true, -- Automatically spaces child elements
+})
+
+-- Split into two vertical columns side by side
+local LeftCol = Row:VStack()
+local RightCol = Row:VStack()
+
+-- Add elements to left column
+LeftCol:Button({ Title = "Option 1" })
+LeftCol:Toggle({ Title = "Feature A" })
+
+-- Add elements to right column
+RightCol:Button({ Title = "Option 2" })
+RightCol:Toggle({ Title = "Feature B" })
+```
+
+---
+
+## ProgressBar
+
+Creates a determinate or indeterminate progress bar to visualize loading states, level progress, or numeric thresholds. Added in WindUI `1.6.66`.
+
+### Determinate Progress Bar
+```luau
+local Bar = Tab:ProgressBar({
+    Title = "Downloading Assets",
+    Desc = "Caching remote assets to storage",
+    Value = {
+        Min = 0,
+        Max = 100,
+        Default = 25,
+    },
+    DisplayMode = "Percent", -- "Percent", "Value", or "Fraction"
+    ShowValue = true,
+    Animate = true,
+    AnimationDuration = 0.15,
+    Width = 180,
+    ValueWidth = 44,
+})
+
+-- Update value
+Bar:Set(75)
+
+-- Read values
+local current = Bar:Get()
+local pct = Bar:GetPercentage()
+```
+
+### Indeterminate Progress Bar
+```luau
+local LoadingBar = Tab:ProgressBar({
+    Title = "Syncing Database",
+    Desc = "Please wait...",
+    Indeterminate = true,
+    IndeterminateText = "Connecting...",
+    Speed = 1.2,
+})
+```
+
+### Custom Value Formatter
+```luau
+local StorageBar = Tab:ProgressBar({
+    Title = "Storage Used",
+    Value = { Min = 0, Max = 1000, Default = 450 },
+    DisplayMode = "Value",
+    Format = function(value, percentage, min, max)
+        return string.format("%d MB / %d MB", value, max)
+    end,
+})
+```
+
+### ProgressBar Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Title` | `string` | `"Progress"` | Label displayed above the progress bar |
+| `Desc` | `string?` | `nil` | Description text below title |
+| `Value.Min` | `number` | `0` | Minimum range value |
+| `Value.Max` | `number` | `100` | Maximum range value |
+| `Value.Default` | `number` | `Min` | Initial progress value |
+| `ShowValue` | `boolean?` | `not Indeterminate` | Whether value text is visible |
+| `DisplayMode` | `string?` | `"Percent"` | Display format: `"Percent"`, `"Value"`, or `"Fraction"` |
+| `Format` | `function?` | `nil` | Custom text formatter `function(val, pct, min, max)` |
+| `Animate` | `boolean?` | `true` | Enables tweened fill transitions |
+| `AnimationDuration`| `number?` | `0.15` | Fill animation duration in seconds |
+| `Indeterminate` | `boolean?` | `false` | Enables looping loading animation |
+| `IndeterminateText`| `string?` | `""` | Text shown during indeterminate state |
+| `Speed` | `number?` | `1` | Animation speed for indeterminate mode |
+| `ControlGap` | `number?` | `16` | Spacing between bar and value text |
+| `Width` | `number?` | `160` | Total width of the progress bar container |
+| `ValueWidth` | `number?` | `44` | Width allocated for the value label |
+
+### ProgressBar Methods
+- `Bar:Set(Number)`: Sets current progress value.
+- `Bar:Get()`: Returns current value.
+- `Bar:GetPercentage()`: Returns progress percentage (0 to 100).
+- `Bar:SetRange(Min, Max)`: Updates both minimum and maximum bounds.
+- `Bar:SetMin(Min)`: Updates minimum bound.
+- `Bar:SetMax(Max)`: Updates maximum bound.
+
+---
+
+## Group (deprecated)
+
+> [!WARNING]
+> `Group` is officially deprecated in WindUI. Use [HStack & VStack](#hstack--vstack) instead for multi-element layouts.
+
+```luau
+local ActionGroup = Tab:Group({})
+ActionGroup:Button({ Title = "Save", Icon = "save", Justify = "Center" })
+ActionGroup:Button({ Title = "Delete", Icon = "trash", Justify = "Center" })
+```
+
+---
+
+## Tooltip
+
+Tooltips render in a dedicated top-level `ScreenGui` layer (`WindUI/Tooltips`), ensuring they float above all other windows.
+
+### Usage in Sliders & Tabs
+- In **Sliders**: Set `IsTooltip = true` to show a live numeric tooltip above the thumb while dragging.
+- In **Tabs**: Set `Desc = "Description text"` to display a tooltip when hovering over the tab in the sidebar.
+
+```luau
+Tab:Slider({
+    Title = "Smooth Aim",
+    IsTooltip = true,
+    Value = { Min = 1, Max = 10, Default = 5 },
+})
+```
+
+---
+
+## Acrylic & Transparency
+
+WindUI supports frosted-glass acrylic blur and background transparency.
+
+### Acrylic Blur
+Acrylic blur places a 3D `Part` behind the GUI combined with a `DepthOfFieldEffect` in `Lighting` (`FarIntensity = 0`, `NearIntensity = 1`, `InFocusRadius = 0.1`).
+
+```luau
+local Window = WindUI:CreateWindow({
+    Title = "Frosted Hub",
+    Acrylic = true,
+})
+
+-- Toggle dynamically at runtime
+WindUI:ToggleAcrylic(false)
+```
+
+> [!NOTE]
+> Acrylic requires an executor that supports workspace 3D Part manipulation behind CoreGui/gethui. In environments lacking this support, use `Transparent = true` instead.
+
+---
 
 ## Localization
 
-Translate UI into different languages.
+WindUI includes a built-in localization system. When registered, any element title prefixed with `"loc:"` automatically translates to the active language.
 
-### Creating Localization example
 ```luau
--- Paste this before 'CreateWindow()'
-WindUI:Localization({ -- it automatically detects the user's language
+-- Register localization before creating the Window
+WindUI:Localization({
     Enabled = true,
     Prefix = "loc:",
     DefaultLanguage = "en",
     Translations = {
-        ["ru"] = {
-            ["WINDUI_EXAMPLE"] = "WindUI Пример",
-            ["WELCOME"] = "Добро пожаловать в WindUI!",
-            ["SETTINGS"] = "Настройки",
-            ["FEATURES"] = "Функционал",
-            ["LOGO"] = "rbxassetid://...", -- russian logo
-        },
         ["en"] = {
-            ["WINDUI_EXAMPLE"] = "WindUI Example",
-            ["WELCOME"] = "Welcome to WindUI!",
-            ["SETTINGS"] = "Settings",
-            ["FEATURES"] = "Features",
-            ["LOGO"] = "rbxassetid://...", -- english logo
+            ["TITLE"] = "Automation Hub",
+            ["FARM"] = "Auto Farm",
+            ["SPEED"] = "Player Speed",
         },
-        -- and more languages...
-    }
+        ["ru"] = {
+            ["TITLE"] = "Хаб Автоматизации",
+            ["FARM"] = "Авто Фарм",
+            ["SPEED"] = "Скорость Игрока",
+        },
+        ["es"] = {
+            ["TITLE"] = "Centro de Automatización",
+            ["FARM"] = "Granja Automática",
+            ["SPEED"] = "Velocidad del Jugador",
+        },
+    },
 })
-```
 
-#### Set Language
-```luau
--- removes automatic language detection
-WindUI:SetLanguage("en") -- english language
-```
-
-#### Usage example
-```luau
 local Window = WindUI:CreateWindow({
-    Title = "loc:WINDUI_EXAMPLE", -- using with prefix 'loc:'
-    Icon = "loc:LOGO",
-    Author = "loc:WELCOME", -- too
-    Folder = "MyTestHub",
-    Theme = "Dark",
+    Title = "loc:TITLE",
 })
-```
-#### API
-### Localization Options
 
-| Option | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `Enabled` | `boolean` | `true` | `false` | Enabled Localizations |
-| `Prefix` | `string` | `false` | `loc:` | Prefix for the Localization |
-| `DefaultLanguage` | `string` | `true` | `en` | Default Language if users language not found |
-| `Translations` | `table` | `true` | `nil` | Languages |
+local Tab = Window:Tab({ Title = "General" })
+Tab:Toggle({ Title = "loc:FARM" })
+Tab:Slider({ Title = "loc:SPEED", Value = { Min = 16, Max = 100, Default = 16 } })
+
+-- Switch language dynamically at runtime
+WindUI:SetLanguage("es")
+```
+
+---
 
 ## Configs
 
-Creating Configs. Saving and Loading it.
+WindUI provides automatic preference persistence for all elements equipped with a `Flag` string.
 
-#### Load ConfigManager
+### Configuration Saving Workflow
+1. Specify `Folder` in `CreateWindow`:
 ```luau
-local ConfigManager = Window.ConfigManager
-```
-
-#### Create Config File
-```luau
-local myConfig = ConfigManager:CreateConfig("myConfigExample")
-```
-
-#### Register elements
-```luau
-myConfig:Register("SpecialNameExample", Element)
-```
-
-##### Example Register
-**Flags (easy):**
-
-```luau
-local ToggleElement = Tab:Toggle({
-    Title = "Toggle",
-    Desc = "Config Test Toggle",
-    Flag = "ToggleElement"
-    Callback = function(v) print("Toggle Changed: " .. tostring(v)) end
+local Window = WindUI:CreateWindow({
+    Title = "My Script",
+    Folder = "MyHubFolder",
 })
 ```
-**Function:**
-
+2. Assign unique `Flag` keys to elements:
 ```luau
-local ToggleElement = Tabs.ConfigTab:Toggle({
-    Title = "Toggle",
-    Desc = "Config Test Toggle",
-    Callback = function(v) print("Toggle Changed: " .. tostring(v)) end
-})
-
--- register
---                 | Element name (no spaces)    | Element          |
-myConfig:Register( "toggleNameExample",          ToggleElement      )
+Tab:Toggle({ Title = "ESP", Flag = "esp_toggle", Value = false })
+Tab:Slider({ Title = "ESP Range", Flag = "esp_range", Value = { Min = 100, Max = 1000, Default = 500 } })
 ```
-
-#### Save & Load configs
-
-The config will be saved in
-```text
-{yourExecutor}/Workspace/WindUI/{yourFolderName: Window.Folder}/config/myConfigExample.json
-```
-
-#### Save
+3. Save or load configs using `Window.ConfigManager`:
 ```luau
-myConfig:Save()
+local Config = Window.ConfigManager:Config("DefaultProfile")
+
+-- Save configuration to disk
+Config:Save()
+
+-- Load configuration
+Config:Load()
 ```
 
-#### Load
-```luau
-myConfig:Load()
-```
+Configs are saved as JSON files in `<Folder>/configs/<Profile>.json`.
 
-#### Delete
-```luau
-myConfig:Delete()
-```
-
-#### Get All Config Files
-```luau
-ConfigManager:AllConfigs() -- returns a table
-```
-
-#### Example script
-```luau
-local ConfigManager = Window.ConfigManager
-local myConfig = ConfigManager:CreateConfig("config1") -- will be saved as config1.json
-
-Tab:Toggle({
-    Title = "Toggle Example",
-    Flag = "ToggleElement",
-    Callback = function(v)
-        print("Toggle: " .. v)
-    end
-})
-
-myConfig:Save()
-myConfig:Load()
-```
+---
 
 ## Icons
 
-What icons WindUI uses and how to use them.
+WindUI supports Lucide icons by default, as well as multiple icon sets via prefixes, Roblox asset IDs, and direct web URLs.
 
-### Icons
+### Icon Sets and Prefixes
 
-#### Icons that are used in WindUI:
-- [Lucide Icons](https://lucide.dev)
-- [Geist Icons](https://vercel.com/geist/icons)
-- [Craft Icons](https://www.figma.com/community/file/1415718327120418204) (figma community)
+| Icon Set | Prefix / Format | Example |
+| :--- | :--- | :--- |
+| **Lucide Icons** (default) | `lucide:` or bare name | `"swords"`, `"lucide:home"` |
+| **Craft Icons** | `craft:` | `"craft:folder"` |
+| **Geist Icons** | `geist:` | `"geist:triangle"` |
+| **Solar Icons** | `solar:` | `"solar:bell-bold"` |
+| **SF Symbols** | `sfsymbols:` | `"sfsymbols:sunMinFill"` |
+| **Roblox Asset ID** | `rbxassetid://` | `"rbxassetid://123456789"` |
+| **Direct Image URL** | `https://` | `"https://example.com/icon.png"` |
 
-#### How to use them
-You can use it like this:
+Browse Lucide icon names at [lucide.dev](https://lucide.dev).
 
-```luau
--- lucide
-local Icon = "lucide:bird"
+---
 
--- geist
-local Icon = "geist:window"
+## Fork & Development
 
--- craft
-local Icon = "craft:macbook-stroke"
+To modify, build, or contribute to WindUI:
+
+### Setup Local Repository
+```bash
+git clone https://github.com/Footagesus/WindUI.git
+cd WindUI
 ```
 
-Source of icons: https://github.com/Footagesus/Icons
+### Install Dependencies
+WindUI uses [Darklua](https://darklua.com) for bundling and minification:
+```bash
+cargo install darklua
+npm install
+```
 
-More icons will be soon
+### Build WindUI
+```bash
+npm run build
+```
+This processes the source code in `src/` and produces the bundled output file at `dist/main.lua`.
+
+---
 
 ## FAQ
 
-Frequently Asked Questions.
-
-### Answers to your questions.
-
----
-
-###### Want to ask a question?
-
-[Visit our Discord server!](https://discord.gg/ftgs-development-hub-1300692552005189632)
-
----
-#### What is WindUI?
-
-WindUI is a stylish, open-source UI (User Interface) library specifically designed for Roblox Script Hubs.
-Developed by `Footagesus`   (`.ftgs`, `Footages`).
-It aims to provide developers with a modern, customizable, and easy-to-use toolkit for creating visually appealing interfaces within Roblox.
-The project is primarily written in Lua (Luau), the scripting language used in Roblox.
-
-#### How to lock the elements?
-You can lock Element with `Locked`
-
-Example with [Button](/docs/button):
+#### How do I lock UI elements dynamically?
+Each interactive element exposes `:Lock()` and `:Unlock()` methods. When locked, user clicks and keystrokes are ignored and a visual overlay is displayed.
 ```luau
-local MySuperButton = Tab:Button({
-    Title = "Button",
-    Locked = true, -- lock the element
-    Callback = function() -- callback will not work. element is locked.
-        print("clicked")
-    end
-})
+local MyButton = Tab:Button({ Title = "Admin Action" })
+MyButton:Lock()
+task.wait(5)
+MyButton:Unlock()
 ```
 
-__All elements with callback have a `Locked` thing__
-
-Also you can lock the element at any time:
+#### How do I hide the mobile OpenButton?
+In `CreateWindow`, configure `OpenButton.Enabled = false`:
 ```luau
-MySuperButton:Lock()
+OpenButton = {
+    Enabled = false,
+}
+```
+Or update it at runtime:
+```luau
+Window:EditOpenButton({ Enabled = false })
 ```
 
-or unlock:
-```luau
-MySuperButton:Unlock()
-```
-#### How to colorize custom icons?
-if you use Nebula icons, or your custom vector* icons.
-
-Usually WindUI doesn't colorize custom icons to match the theme.
-
-- But you can do it with `IconThemed`
-
-`IconThemed` is available in:
-- [Window](/docs/window)
-- [Tab](/docs/tab)
-- [Tab Section](/docs/tabsection)
-- [Dialog](/docs/dialog)
-- [Popup](/docs/popup)
-- [Notification](/docs/notification)
-- [Paragraph](/docs/paragraph)
-
-For example:
-**Window:**
-
-```luau
-local Window = WindUI:CreateWindow({
-    -- ...
-
-    Icon = "rbxassetid://..." -- my custom vector* icon
-    IconThemed = true                                       --
-})
-```
-
-**Tab:**
-
-```luau
-local Tab = Window:Tab({
-    -- ...
-
-    Icon = "rbxassetid://..." -- my custom vector* icon
-    IconThemed = true                                       --
-})
-```
-
-**Popup:**
-
-```luau
-local Popup = WindUI:Popup({
-    -- ...
-
-    Icon = "rbxassetid://..." -- my custom vector* icon
-    IconThemed = true                                       --
-})
-```
-
-and others.
-#### How to disable OpenButton?
-You can disable the `OpenButton` if you don't need it.
-
-```luau
-Window:EditOpenButton({
-    Enabled = false
-})
-```
-
-_More coming soon_
+#### Why does background image not work?
+Ensure you are using a raw image URL or a direct image asset ID (`rbxassetid://<id>`). Roblox Decal IDs will not display directly on GUI ImageLabels without resolving to asset IDs.
