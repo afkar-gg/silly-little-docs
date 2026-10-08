@@ -1,376 +1,616 @@
-# MoonVeil Macros Documentation
+# MoonVeil Macros & API Documentation
 
-Source: https://moonveil.cc/docs/macros/
+Sources:
+- Macros & Directives: https://moonveil.cc/docs/macros/
+- HTTP API Reference: https://moonveil.cc/docs/api
 
-MoonVeil macros allow you to selectively apply additional features to your Lua scripts during obfuscation, adjusting the balance between performance and security.
+MoonVeil is an obfuscation and transformation suite designed for Luau. The system provides two primary interfaces:
+1. **In-script compiler macros and comment directives** (`--!mv:...`) allowing selective, function-by-function control over obfuscation, virtualization, control flow flattening, and optimization passes.
+2. **REST HTTP API (v2)** for programmatic obfuscation, minification, and code formatting.
 
-## Overview
+---
 
-MoonVeil's macro system provides various functions that can be used to:
+## 1. Directive Paradigms: Comments vs Call-Style
 
-- Force or omit specific obfuscation passes (CFF, VM)
-- Encrypt functions and strings
-- Compress strings
-- Virtualize functions
-- Inline functions as a preprocessor
-- Obfuscate named indexes
-- Detect if the script is currently obfuscated
-- Get the current line number
-- Crash the VM intentionally
+MoonVeil macros can be declared in two styles:
 
-Macros are declared as globals and are replaced during obfuscation.
+### A. Comment Directives (`--!mv:...`)
+Placed directly above local functions or function declarations.
+```luau
+--!mv:vm
+local function verify(pw)
+    return pw == "s3cret"
+end
+```
+**Benefits**:
+- Fully compliant with Luau language server (`luau-lsp`, `roblox-live-lsp`) without raising unknown global or typing errors.
+- No SDK headers or unobfuscated shims required for typecheckers and linters.
+- Plain source scripts can be executed and debugged directly in Luau/Roblox without modification.
 
-## MV_CFF
+### B. Call-Style Inline Macros (`MV_*(...)`)
+Wrapped around expressions or anonymous function bodies.
+```luau
+local verify = MV_VM(function(pw)
+    return pw == "s3cret"
+end)
+```
+Macros are replaced and stripped during AST compilation.
 
-```lua
-declare function MV_CFF<A..., R...>(vmFunction: (A...) -> R..., enableExpressionDecomposition?: boolean): (A...) -> R...
+---
+
+## 2. Security Macros
+
+### `MV_PRECHECK`
+```luau
+declare function MV_PRECHECK(fn: () -> ...any, ...keys: any): ()
+```
+Runs a precheck function before the script is decrypted and folds its return values into the script's decryption key. Each key argument must match the corresponding return value in order and type; on any mismatch (wrong value, wrong type, or missing return), key derivation fails and the script halts.
+
+**Parameters**:
+- `fn`: Anonymous function returning environment values being checked. Must be non-variadic and take no parameters. Globals are allowed, but cannot capture upvalues.
+- `...keys`: Expected values matching returned values in order. Supported types: number (non-negative integer < 4294967295 / uint32), string, or boolean literal.
+
+> **Note**: Only available with the `safeEnv` compile type.
+
+```luau
+MV_PRECHECK(function()
+    return 0x1234
+end, 0x1234)
+
+-- Multiple keys checked in order
+MV_PRECHECK(function()
+    return true, "rosiej", 255
+end, true, "rosiej", 255)
+
+-- Inspecting global environment
+MV_PRECHECK(function()
+    return game.PlaceId
+end, 25522223443)
 ```
 
-Will force the [CFF](https://moonveil.cc/docs/options/flatten-control-flow/) pass onto the passed function. Expression decomposition is enabled by default, but can be disabled with the second argument.
+---
 
-### Valid Usage
+### `MV_REWRITE`
+```luau
+declare function MV_REWRITE<T>(expr: T, preset?: "fast" | "strong" | "extreme", ...ctx: any): T
+```
+Rewrites an integer or word arithmetic expression into an equivalent Mixed Boolean Arithmetic (MBA) expression, hardening calculations against static and symbolic analysis.
 
-```lua
-MV_CFF(function()
-    for i = 0, 10 do
-        print('this is flattened!', i)
-    end
-    MV_OMIT_CFF(function() print('this isnt') end)()
-end)()
+**Supported Operators**:
+- Arithmetic: `+`, `-`, `*`
+- Lua 5.3 / Luau bitwise: `&`, `|`, `~`, unary `~`
+- Bit shifts: `<<`, `>>`
 
--- passing false as a second argument will disable expression decomposition, leading to much smaller output
-MV_CFF(function()
-    for i = 0, 10 do
-        print('this is flattened!', i)
-    end
-    MV_OMIT_CFF(function() print('this isnt') end)()
-end, false)()
+**Restrictions**:
+- Table and index accesses (`t.x` or `t[1]`) are **not** accepted directly inside the expression; localize them first.
+- At most 8 distinct identifiers may be captured in a single expression.
+- Designed for integer/word arithmetic, not arbitrary floating-point math.
+
+**Parameters**:
+- `expr`: Integer expression to rewrite.
+- `preset?`: Rewrite effort: `"fast"`, `"strong"` (default), or `"extreme"`.
+- `...ctx`: Up to 8 extra constants, locals, or globals the MBA generator may incorporate.
+
+```luau
+local x, y = 12345, 67890
+
+local sum = MV_REWRITE(x + y)
+local mixed = MV_REWRITE((x + y) * (x ~ y) - (x & y), "extreme")
+
+-- Context injection
+local aux = 111
+local masked = MV_REWRITE(x & y, "fast", aux, 7)
 ```
 
-## MV_COMPRESS
+---
 
-```lua
-declare function MV_COMPRESS(data: string): string
+### `MV_ENC_FUNC`
+```luau
+declare function MV_ENC_FUNC<A..., R...>(fn: (A...) -> R..., key: string, rtKey: string, vmType?: "fox" | "skid"): (A...) -> R...
 ```
+Lifts and encrypts the function body at build time into the chosen VM implementation. `rtKey` must evaluate at runtime to match `key` for successful decryption. Referenced upvalues are captured.
 
-Will compress the passed string and decompress at runtime.
+**Parameters**:
+- `fn`: The target function to protect.
+- `key`: Constant string used for build-time encryption.
+- `rtKey`: Runtime expression that must produce the matching key string.
+- `vmType?`: Target VM architecture: `"fox"` or `"skid"`. Defaults to the compile-level VM option.
 
-> **Note**: `LPH_ENCSTR` is an available alias, although not a direct replacement.
-
-### Valid Usage
-
-```lua
-return MV_COMPRESS([[Lorem ipsum odor amet, consectetuer adipiscing elit. Ipsum curae senectus ut tempor rhoncus sed aliquam fermentum. Luctus consectetur consectetur vitae parturient risus enim. Justo venenatis dictumst eget tincidunt eu fermentum. Erat elementum molestie ad aliquam donec mauris tempor. Justo dictumst dapibus ultricies potenti scelerisque class sociosqu vivamus. Dignissim lobortis tristique nullam placerat lectus maximus class dolor.
-
-Class eros ligula facilisis viverra adipiscing. Convallis penatibus lacinia hac pretium tempor mauris risus. Aliquet sagittis quisque dignissim duis volutpat eleifend sagittis. Mollis duis congue non auctor duis sapien senectus. Magna aptent ac nostra nisl; penatibus sagittis dis. Tempus sapien porta dolor luctus tempus felis habitant phasellus.
-
-Volutpat quam senectus tristique egestas dui risus praesent maecenas adipiscing. Ante est platea cursus consequat quisque curabitur euismod. Himenaeos blandit augue; sed condimentum curae curabitur aliquam. Hac hendrerit arcu maecenas nisi iaculis donec natoque gravida. Sapien pretium nascetur, nisl in feugiat ultricies. Pretium ipsum ultricies et non blandit accumsan arcu. Egestas enim litora tortor nisi aenean posuere. Tortor posuere purus facilisi augue ipsum.
-
-Metus ultrices netus rhoncus sed mi et neque ex. Tincidunt commodo metus quisque hendrerit tristique nostra amet sociosqu. Curae egestas feugiat massa torquent a vel faucibus faucibus. Euismod posuere cubilia penatibus class molestie torquent tristique commodo nam. Nullam rhoncus ad sem, habitasse euismod porta gravida. Ut curabitur tristique orci vestibulum rhoncus. Habitasse pulvinar risus congue dis cras consequat inceptos. Nulla hac interdum commodo enim magna; habitant id? Lacus pretium per accumsan praesent rutrum vestibulum.]])
-```
-
-## MV_CRASH
-
-```lua
-declare function MV_CRASH(void): void
-```
-
-Crashes the VM and corrupts the state.
-
-> **Note**: `LPH_CRASH` is an available alias.
-> **Warning**: This macro can only be used in virtualized blocks.
-
-### Valid Usage
-
-```lua
-MV_VM(function() MV_CRASH() end)()
-MV_VM(function()
-    local a = MV_CRASH()
-end)()
-```
-
-## MV_ENC_FUNC
-
-```lua
-declare function MV_ENC_FUNC<A..., R...>(vmFunction: (A...) -> R..., encryptKey: string, decryptKey: string): (A...) -> R...
-```
-
-Will virtualize and encrypt the passed function constant with the provided `encryptKey`. Then `decryptKey` is evaluated at runtime to grab the key. There are no restrictions on the length or the allowed characters of the keys, only that they are the same.
-
-> **Note**: `LPH_ENCFUNC` is an available alias.
-
-### Valid Usage
-
-```lua
-local total = 0
-
+```luau
 local getKey = MV_VM(function()
-  -- WARNING: this is just an example! don't do this
-  return "pass" .. "word123"
+    return "pass" .. "word123"
 end)
 
-for i = 1, 10 do
-  -- referenced upvalues will be captured
-  MV_ENC_FUNC(function()
-    print("in virtualized function # 1", i)
-    total = total + i
-  end, "password123", getKey())()
+local load = MV_ENC_FUNC(function()
+    return payload()
+end, "buildKey", getKey())
+```
+
+---
+
+### `MV_VM`
+- **Comment Directive**: `--!mv:vm [vmType?]`
+- **Call-Style Macro**:
+```luau
+declare function MV_VM<A..., R...>(fn: (A...) -> R..., vmType?: "fox" | "skid"): (A...) -> R...
+```
+Virtualizes the function, translating Luau bytecode into an abstracted instruction set architecture (ISA) interpreted by MoonVeil's embedded virtual machine runtime.
+
+**Parameters**:
+- `fn`: The function to virtualize.
+- `vmType?`: Target VM architecture: `"fox"` | `"skid"`. Defaults to the selected project VM option.
+
+```luau
+-- Comment directive
+--!mv:vm skid
+local function factorial(n)
+    if n <= 0 then return 1 end
+    return n * factorial(n - 1)
 end
 
-return total
+-- Call-style
+local verify = MV_VM(function(pw)
+    return pw == "s3cret"
+end, "fox")
 ```
 
-## MV_ENC_STR
+---
 
-```lua
-declare function MV_ENC_STR(str: string, encryptKey: string, decryptKey: string): string
+### `MV_CFF`
+- **Comment Directive**: `--!mv:cff [decompose?] [mangleExpr?] [cfManglePercent?]`
+- **Call-Style Macro**:
+```luau
+declare function MV_CFF<A..., R...>(
+    fn: (A...) -> R...,
+    decompose?: boolean,
+    mangleExpr?: boolean,
+    cfManglePercent?: number
+): (A...) -> R...
 ```
+Applies Control Flow Flattening (CFF), converting execution graphs into an opaque state machine dispatched within a central switch/loop construct.
 
-Will encrypt the passed string constant with the provided `encryptKey`. Then `decryptKey` is evaluated at runtime to grab the key. There are no restrictions on the length or the allowed characters of the keys, only that they are the same.
+**Parameters**:
+- `fn`: The function to flatten.
+- `decompose?`: Decomposes control flow into a state machine (`boolean`, default: `false`).
+- `mangleExpr?`: Mangles table indices, strings, and globals within the function (`boolean`, default: `false`).
+- `cfManglePercent?`: Percentage chance of inserting bogus/opaque control flow branches (`number`, default: `0`).
 
-### Valid Usage
-
-```lua
-local getKey = MV_VM(function()
-  return "pass" .. "word123"
-end)
-
-return MV_ENC_STR("hello world", "password123", getKey())
-```
-
-## MV_INDEX_TO_NUM
-
-```lua
-declare function MV_INDEX_TO_NUM(tbl: {}): {}
-```
-
-Will replace all instances of named indexes with a unique number constant.
-
-### Valid Usage
-
-```lua
-local foo = MV_INDEX_TO_NUM({total = 0, b = 2})
-for i = 1, 10 do
-  foo.total = foo.total + i
+```luau
+-- Comment directive
+--!mv:cff true false 10
+local function process(n)
+    if n <= 0 then return 1 end
+    return n * process(n - 1)
 end
-return foo.total + foo.b
-```
 
-turns into:
-
-```lua
--- note that the order of the indexes has been changed as well
-local a={[24453]=2,[19314]=0}
-for b=1,10 do
-    a[19314]=a[19314]+b
-end
-return a[19314] + a[24453]
-```
-
-## MV_INLINE
-
-```lua
-declare function MV_INLINE<A..., R...>(inlineFunction: (A...) -> R...): (A...) -> R...
-```
-
-Will mark the passed function to be inlined where used.
-
-Some limitations apply:
-
-- The passed function cannot be variadic (i.e. no `...` usage)
-- The passed function cannot tailcall or otherwise recursively call itself.
-- You must use this macro in its specific form, i.e. `local <var> = MV_INLINE(function() ... end)`
-
-Note that this pass acts more like a preprocessor that replaces the function calls with the results of the function (if any), and can have strange effects in some cases.
-
-For example, when an inlined function is called, its function body is inserted right before the statement the call is in. This can lead to some unexpected behavior when used in `or` or `if` expressions:
-
-```lua
-local called = false
-local testFunc = MV_INLINE(function()
-    called = true
-    return 'hi'
-end)
-
-local foo = 'bar' or testFunc()
-print(foo, called)
-```
-
-Will print `bar true`, where under normal circumstances testFunc should not be executed. This is because the `or` expression is evaluated after the inserted body.
-
-### Valid Usage
-
-```lua
-local testFunc = MV_INLINE(function(start, endn)
-    local total = 0
-    for i = start, endn do
-        total = total + i
+-- Call-style
+local step = MV_CFF(function()
+    for i = 1, 10 do
+        print(i)
     end
-    return total
-end)
-
-local testFunc2 = MV_INLINE(function()
-    return testFunc(1, 10), testFunc(11, 20), testFunc(1, 15)
-end)
-
-print(testFunc2())
+end, true, true, 10)
 ```
 
-## MV_LINE
+---
 
-```lua
+### `MV_ENC_STR`
+```luau
+declare function MV_ENC_STR(str: string, key: string, rtKey: string): string
+```
+Encrypts a string literal at build time. The string is reconstructed in memory only when `rtKey` matches the build-time `key`.
+
+```luau
+local url = MV_ENC_STR("https://api.site/x", "buildKey", getKey())
+```
+
+---
+
+### `MV_INDEX_TO_NUM`
+```luau
+declare function MV_INDEX_TO_NUM<T: {}>(tbl: T): T
+```
+Replaces table string field accesses and definitions with unique numeric constants throughout the code.
+
+```luau
+local input = MV_INDEX_TO_NUM({
+    _mv_jump = 1,   -- all occurrences of obj._mv_jump are converted to numeric indices
+    _mv_crouch = 2,
+})
+```
+
+---
+
+### `MV_OBFUSCATED`
+```luau
+declare MV_OBFUSCATED: boolean?
+```
+Constant identifier that resolves to `true` in obfuscated output, and `nil` (falsy) in uncompiled source. Unreachable branches guarded by `MV_OBFUSCATED` are pruned by dead-code elimination.
+
+```luau
+if not MV_OBFUSCATED then
+    warn("Development mode")
+else
+    enforceSecurity()
+end
+```
+
+---
+
+### `MV_CRASH`
+```luau
+declare function MV_CRASH(): ()
+```
+Emits an expression that terminates execution and corrupts VM state.
+
+```luau
+if isDebuggerPresent() then
+    MV_CRASH()
+end
+```
+
+---
+
+## 3. Optimization Macros
+
+### `MV_OMIT`
+- **Comment Directive**: `--!mv:omit`
+- **Call-Style Macro**:
+```luau
+declare function MV_OMIT<T>(val: T): T
+```
+Omits the target function or expression from all obfuscation passes and virtualization, emitting plaintext code. Referenced upvalues are automatically patched. Essential for high-frequency runtime loops (`RunService.Heartbeat`, `RenderStepped`, animation ticks).
+
+```luau
+-- Comment directive
+--!mv:omit
+local function onRender(deltaTime)
+    fpsCounter.Text = tostring(math.round(1 / deltaTime))
+end
+
+-- Call-style
+RunService.PreRender:Connect(MV_OMIT(function(dt)
+    label.Text = tostring(dt)
+end))
+```
+
+---
+
+### `MV_INLINE`
+- **Comment Directive**: `--!mv:inline`
+- **Call-Style Macro**:
+```luau
+declare function MV_INLINE<A..., R...>(fn: (A...) -> R...): (A...) -> R...
+```
+Inlines the function body directly at each call site rather than generating a function object.
+
+**Limitations**:
+- Cannot be variadic (`...`).
+- Cannot tail-call or recurse.
+- In call-style, must follow the pattern `local <var> = MV_INLINE(function(...) ... end)`.
+
+```luau
+-- Comment directive
+--!mv:inline
+local function halve(n)
+    return n / 2
+end
+print(halve(10))
+
+-- Call-style
+local add = MV_INLINE(function(a, b)
+    return a + b
+end)
+print(add(2, 3))
+```
+
+---
+
+## 4. Luraph Drop-In Compatibility
+
+MoonVeil includes compatibility aliases for Luraph (`LPH_*`) macros, enabling existing scripts to build on MoonVeil without modification:
+
+| Luraph Macro | MoonVeil Replacement / Alias | Behavior |
+| :--- | :--- | :--- |
+| `LPH_OBFUSCATED` | `MV_OBFUSCATED` | Resolves `true` in obfuscated code |
+| `LPH_LINE` | `MV_LINE` | Resolves to source line number integer |
+| `LPH_CRASH` | `MV_CRASH` | Halts VM state |
+| `LPH_NO_VIRTUALIZE` | `MV_OMIT` | Leaves function in plaintext |
+| `LPH_ENCFUNC` | `MV_ENC_FUNC` | Encrypts function constant |
+| `LPH_PRECHECK` | `MV_PRECHECK` | Inlines precheck key folding |
+| `LPH_REWRITE` | `MV_REWRITE` | MBA arithmetic rewriting |
+| `LPH_ENCSTR` | *Ignored Stub* | Safely ignored; no-op |
+| `LPH_ENCNUM` | *Ignored Stub* | Safely ignored; no-op |
+| `LPH_JIT` | *Ignored Stub* | Safely ignored; no-op |
+| `LPH_NO_UPVALUES`| *Ignored Stub* | Safely ignored; no-op |
+
+---
+
+## 5. Miscellaneous Macros
+
+### `MV_LINE`
+```luau
 declare MV_LINE: number
 ```
+Resolves to a number constant representing the source code line number where the macro sits.
 
-Will be replaced with a number constant representing the current line.
-
-> **Note**: `LPH_LINE` is an available alias.
-
-### Valid Usage
-
-```lua
-local a = MV_LINE
-print(a, MV_LINE)
+```luau
+error("Assertion failed at line " .. MV_LINE)
 ```
 
-turns into:
-
-```lua
-print(1, 2)
+### `MV_COMPRESS`
+```luau
+declare function MV_COMPRESS(value: string): string
 ```
+Flags string constants or blocks for compression. (Currently a passthrough in recent versions).
 
-> **Note**: the `a` local got folded yet retains the original line number.
+---
 
-## MV_OBFUSCATED
+## 6. Unobfuscated Development Shim
 
-```lua
-declare MV_OBFUSCATED: boolean
-```
+Include this header at the beginning of development source files to enable local Luau CLI execution (`luau.exe`, mock tests) and prevent IDE type/global warnings:
 
-This macro is a constant value that is set as `true` during obfuscation, which can allow certain code paths to only run in an obfuscated or unobfuscated context. MoonVeil will optimize out the blocks which should not run.
+```luau
+if not MV_OBFUSCATED then
+    MV_OBFUSCATED = false
+    MV_LINE = 0
+    MV_CRASH = function() error("MV_CRASH called") end
+    MV_OMIT = function(fn) return fn end
+    MV_VM = function(fn) return fn end
+    MV_CFF = function(fn) return fn end
+    MV_INLINE = function(fn) return fn end
+    MV_ENC_STR = function(s) return s end
+    MV_ENC_FUNC = function(fn) return fn end
+    MV_INDEX_TO_NUM = function(t) return t end
+    MV_COMPRESS = function(s) return s end
+    MV_PRECHECK = function(fn, ...) return end
+    MV_REWRITE = function(expr, ...) return expr end
 
-> **Note**: `LPH_OBFUSCATED` is an available alias.
-
-### Valid Usage
-
-```lua
-if MV_OBFUSCATED then
-    validateWhitelist() -- This code will only run if the script has been obfuscated.
-else
-    skipWhitelist()
-    -- This code will only run when the script is not obfuscated.
-    -- Additionally, there will be no traces of this code in the obfuscated code.
+    -- Luraph Drop-in compatibility
+    LPH_OBFUSCATED = MV_OBFUSCATED
+    LPH_LINE = MV_LINE
+    LPH_CRASH = MV_CRASH
+    LPH_NO_VIRTUALIZE = MV_OMIT
+    LPH_ENCFUNC = MV_ENC_FUNC
+    LPH_PRECHECK = MV_PRECHECK
+    LPH_REWRITE = MV_REWRITE
+    LPH_ENCSTR = function(s) return s end
+    LPH_ENCNUM = function(n) return n end
+    LPH_JIT = function(fn) return fn end
+    LPH_NO_UPVALUES = function(fn) return fn end
 end
-
-return if MV_OBFUSCATED then runWithoutDebugging() else runWithDebugging()
 ```
 
-turns into:
+---
 
-```lua
-do
-    validateWhitelist()
+## 7. MoonVeil HTTP API Reference (v2)
+
+### Base URL & Protocol
+```text
+https://moonveil.cc/api
+```
+All transformation endpoints are versioned under `/v2`.
+
+### Authentication
+Authenticate using a Bearer token in the `Authorization` HTTP header:
+```http
+Authorization: Bearer <MOONVEIL_API_KEY>
+```
+*(Browser dashboard sessions use the `token` cookie).*
+
+### Status Codes & Errors
+Successful responses return transformed scripts with `Content-Type: text/plain`.
+Errors return JSON payloads:
+```json
+{
+  "error": "Error description message"
+}
+```
+
+| HTTP Status | Meaning |
+| :--- | :--- |
+| `200 OK` | Request succeeded. Response body is transformed Luau script (`text/plain`). |
+| `400 Bad Request` | Malformed JSON, unknown configuration key, or script exceeds account character limit. |
+| `401 Unauthorized` | Missing or invalid API key. |
+| `403 Forbidden` | Requested compile mode or option is not permitted under the current plan. |
+| `429 Too Many Requests` | Daily obfuscation quota exceeded or short-window rate limit hit (`Retry-After` header included). |
+| `500 Server Error` | Internal compiler / backend error. |
+
+---
+
+### Endpoints
+
+#### 1. Account Details
+```http
+GET /api/account
+```
+Retrieves account plan limits, feature flags, and current day quota consumption.
+
+**Response Structure (JSON)**:
+```json
+{
+  "id": "217039...",
+  "email": "user@example.com",
+  "username": "discord_username",
+  "avatar": null,
+  "opLevel": 0,
+  "hasBilling": true,
+  "plan": {
+    "name": "Basic",
+    "maxScriptChars": 5000000,
+    "dailyQuota": 30,
+    "allowedOptions": {
+      "vms": ["fox", "skid"],
+      "compileTypes": ["cff", "vm", "safeEnv"],
+      "compress": true
+    }
+  },
+  "usage": {
+    "used": 8,
+    "quota": 30,
+    "obfuscationCount": 142,
+    "resetsAt": "2026-06-18T03:21:00Z"
+  }
+}
+```
+
+---
+
+#### 2. Obfuscate Script
+```http
+POST /api/v2/obf
+```
+Performs the full MoonVeil obfuscation pipeline.
+
+**Request Body (JSON)**:
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `script` | `string` | *(Required)* | Source Luau script to obfuscate. |
+| `options` | `object` | `{}` | Pipeline configuration settings. |
+| `options.compileType` | `"cff" \| "vm" \| "safeEnv"` | `"cff"` | Top-level compile mode for the root chunk. |
+| `options.vmType` | `"fox" \| "skid"` | `"skid"` | VM architecture implementation. |
+| `options.safeEnvLock` | `"luau" \| "rbx"` | `"luau"` | When `compileType = "safeEnv"`, locks target environment. |
+| `options.cff` | `object` | `none` | Control Flow Flattening options. |
+| `options.cff.decompose` | `boolean` | `false` | Decompose control flow into flattened state machine. |
+| `options.cff.mangleNext` | `boolean` | `false` | Mangle dispatch and successor indices. |
+| `options.cff.mangleStrings` | `boolean` | `false` | Mangle string constants within CFF functions. |
+| `options.cff.mangleGlobals` | `boolean` | `false` | Mangle global table lookups. |
+| `options.cff.mangleCfPercent` | `number` | `0` | Percentage rate of fake control branches (higher = slower). |
+| `options.compress` | `boolean` | `false` | Wrap output in loadstring decompressor (paid plans only). |
+| `options.envWrapper` | `boolean` | `false` | Resolves globals through sandboxed environment wrapper instead of `getfenv`. Enables runtimes without `getfenv` (e.g., Lute) and protects globals from external read. |
+
+**Example Request**:
+```json
+{
+  "script": "print('Hello MoonVeil')",
+  "options": {
+    "compileType": "safeEnv",
+    "vmType": "fox",
+    "safeEnvLock": "rbx",
+    "cff": {
+      "decompose": true,
+      "mangleStrings": true
+    },
+    "compress": true,
+    "envWrapper": true
+  }
+}
+```
+
+**Response**:
+`text/plain` attachment (`obfuscated.lua`) containing the compiled output.
+
+---
+
+#### 3. Prettify Script
+```http
+POST /api/v2/prettify
+```
+Reformats messy, minified, or deobfuscated Luau code into structured, indented, human-readable source.
+
+**Request Body (JSON)**:
+```json
+{
+  "script": "local a=1;function f(x)return x+a end;f(2)"
+}
+```
+
+**Response**:
+`text/plain` formatted code.
+
+---
+
+#### 4. Minify Script
+```http
+POST /api/v2/minify
+```
+Applies AST-level optimization passes (constant folding, dead-code elimination, symbol shortening) and removes unnecessary whitespace and comments.
+
+**Request Body (JSON)**:
+```json
+{
+  "script": "local function add(a, b) return a + b end; print(add(10, 20))"
+}
+```
+
+**Response**:
+`text/plain` minified code.
+
+---
+
+### Implementation Examples
+
+#### Node.js / TypeScript Example
+```typescript
+const MOONVEIL_API_KEY = process.env.MOONVEIL_KEY!;
+
+async function obfuscateScript(sourceCode: string): Promise<string> {
+  const response = await fetch("https://moonveil.cc/api/v2/obf", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${MOONVEIL_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      script: sourceCode,
+      options: {
+        compileType: "vm",
+        vmType: "fox",
+        compress: true,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(`Obfuscation failed (${response.status}): ${errorData.error}`);
+  }
+
+  return await response.text();
+}
+```
+
+#### cURL Example
+```bash
+curl -X POST https://moonveil.cc/api/v2/obf \
+  -H "Authorization: Bearer $MOONVEIL_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "script": "local a = 1; print(a)",
+    "options": {
+      "compileType": "cff",
+      "cff": { "decompose": true }
+    }
+  }' \
+  --output obfuscated.lua
+```
+
+#### Pure Luau Executor Request Example
+```luau
+local HttpService = game:GetService("HttpService")
+local request = (syn and syn.request) or (http and http.request) or request
+
+local function obfuscateRemote(code: string, apiKey: string): string
+    local response = request({
+        Url = "https://moonveil.cc/api/v2/obf",
+        Method = "POST",
+        Headers = {
+            ["Authorization"] = "Bearer " .. apiKey,
+            ["Content-Type"] = "application/json",
+        },
+        Body = HttpService:JSONEncode({
+            script = code,
+            options = {
+                compileType = "cff",
+                vmType = "skid",
+                cff = { decompose = true },
+            },
+        }),
+    })
+
+    if response.StatusCode == 200 then
+        return response.Body
+    else
+        error("Obfuscation error: " .. response.Body)
+    end
 end
-
-return runWithoutDebugging()
-```
-
-## MV_OMIT
-
-```lua
-declare function MV_OMIT(omit: any): any
-```
-
-Will omit all obfuscation steps from the passed expression, will also disregard any indexes set by `MV_INDEX_TO_NUM`. Passing a function to this can be useful to keep performance-critical sections unobfuscated.
-
-When used in a virtualized block (using the `MV_VM` or `MV_ENC_FUNC` macros), this will lift the function from the virtualized block as a separate standalone minified function in plaintext.
-
-> **Note**: `MV_OMIT_FUNCTION` and `LPH_NO_VIRTUALIZE` are also available aliases.
-> Additionally, if you'd like to only omit the function from certain AST passes, you can use the `MV_OMIT_CFF` or `MV_OMIT_VM` macros.
-
-### Valid Usage
-
-```lua
-local dontMangleMe = MV_OMIT(function()
-  print("this whole function is in plaintext!")
-end)
-
-dontMangleMe()
-
-local a = MV_OMIT("plaintext string")
-print(a .. "im obfuscated")
-
-local foo = 'hello'
-MV_ENC_FUNC(function()
-    MV_OMIT(function(aa)
-        if aa == "lol" then
-            foo = "OK"
-        else 
-            foo = "NO"
-        end
-    end)("lol")
-
-    print(foo)
-end, "abc", "abc")()
--- will print "OK"
-```
-
-## MV_OMIT_CFF
-
-```lua
-declare function MV_OMIT_CFF<A..., R...>(cffFunction: (A...) -> R...): (A...) -> R...
-```
-
-Similar to `MV_OMIT`, this will omit only the [CFF](https://moonveil.cc/docs/options/flatten-control-flow/) steps from the passed function. This can be useful to keep performance-critical sections unobfuscated but still have other AST passes applied to them.
-
-### Valid Usage
-
-```lua
-MV_CFF(function()
-    for i = 0, 10 do
-        print('this is flattened!', i)
-    end
-    MV_OMIT_CFF(function() print('this isnt') end)()
-end)()
-```
-
-> Make sure to call the macro result!
-
-## MV_OMIT_VM
-
-```lua
-declare function MV_OMIT_VM<A..., R...>(vmFunction: (A...) -> R...): (A...) -> R...
-```
-
-Similar to `MV_OMIT`, this will only omit the passed function from the VM. This can be useful to keep performance-critical sections unobfuscated but still have other AST passes applied to them.
-
-### Valid Usage
-
-```lua
-MV_VM(function()
-    for i = 0, 10 do
-        print('this is virtualized!', i)
-    end
-    MV_OMIT_VM(function() print('this isnt') end)()
-end)()
-```
-
-> Make sure to call the macro result!
-
-## MV_VM
-
-```lua
-declare function MV_VM<A..., R...>(vmFunction: (A...) -> R...): (A...) -> R...
-```
-
-Will mark the passed function to be lifted into the VM.
-
-### Valid Usage
-
-```lua
-local virtualizedFunction = MV_VM(function(a, b, c)
-  print(a .. b .. c .. " im in the vm!")
-end)
-
-virtualizedFunction("1", "2", "3")
 ```

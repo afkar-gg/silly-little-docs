@@ -378,14 +378,35 @@ Transformations add obfuscation layers to non-virtualized (`VM(NONE)`) functions
 ```lua
 if not LPH_OBFUSCATED then
     LPH_ENCSTR = function(s) return s end
-    LPH_ENCBUF = function(s) return buffer.fromstring(s) end
+    LPH_ENCBUF = function(s) return (buffer and buffer.fromstring and buffer.fromstring(s) or s) end
     LPH_ENCNUM = function(n) return n end
-    LPH_CRASH = function() error("Crash called") end
-    LPH_STACKALLOC = function(size, zeroBased) return {} end
+    LPH_CRASH = function() error("LPH_CRASH called") end
+    LPH_STACKALLOC = function(size, base) return {} end
     LPH_PRECHECK = function(fn, expected) return end
     LPH_REWRITE = function(expr, opts) return expr end
     LPH_ATTRIBUTES = function(...) end
     LPH_LINE = 0
+    LPH_OBFUSCATED = false
+    -- v15 attribute symbol stubs
+    VM = function(x) return x end
+    PRESET = function(x) return x end
+    ERROR_HANDLING = function(x) return x end
+    OPTIMIZE = function(x) return x end
+    TRANSFORM = function(...) end
+    ENCRYPT = function(...) end
+    INLINE = function(...) end
+    UNROLL = function(...) end
+    NONE = "NONE"
+    OPAL = "OPAL"
+    ONYX = "ONYX"
+    FAST = "FAST"
+    BALANCED = "BALANCED"
+    SECURE = "SECURE"
+    NO_UPVALUES = "NO_UPVALUES"
+    GLOBALS = "GLOBALS"
+    CONSTANTS = "CONSTANTS"
+    CONTROL_FLOW = "CONTROL_FLOW"
+    REWRITE_NAMECALLS = "REWRITE_NAMECALLS"
 end
 ```
 

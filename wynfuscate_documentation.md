@@ -2,180 +2,284 @@
 
 Source: https://wynfuscate.com/docs
 
-wYnFuscate is an advanced Lua obfuscation technology with broad platform compatibility.
+wYnFuscate is an enterprise Lua and Luau obfuscation service designed to protect sensitive intellectual property, anticheat routines, and proprietary algorithms across multiple target environments, including Roblox (Luau), standard Lua 5.1–5.4, and LuaJIT.
 
 ---
 
-## 1. Macros
+## Table of Contents
 
-Macros are compile-time constructs that allow you to write conditional code paths and optimize performance in your obfuscated scripts.
-
-### Quick Reference
-| Macro | Type | Purpose |
-| --- | --- | --- |
-| `WYNF_OBFUSCATED` | boolean | Detect if script is obfuscated |
-| `WYNF_NO_VIRTUALIZE` | function wrapper | Mark function for native execution (unprotected) |
-| `WYNF_JIT` | function wrapper | Faster VM execution for hot functions (performance) |
-| `WYNF_JIT_MAX` | function wrapper | Maximum performance VM for extremely hot functions (performance) |
-| `WYNF_INLINE` | compile-time macro | Inline small helper functions to avoid call overhead (performance) |
-| `WYNF_CRASH` | function call | Immediately terminate the script (destructive) |
-| `WYNF_IS_CALLER_WYNFUSCATE` | function call | Detect external callers (security) |
-| `WYNF_ENC_STRING` | string wrapper | Extra encryption for sensitive strings (security) |
-| `WYNF_ENC_NUM` | number wrapper | Extra encryption for sensitive numbers (security) |
-| `WYNF_LINE` | function call | Get source line number at compile time (debug) |
-| `WYNF_NO_UPVALUES` | function wrapper | Compatibility wrapper for callbacks (compatibility) |
-| `WYNF_SECURE_CALL` | function wrapper | Restrict function to VM-only callers (security) |
-| `WYNF_SECURE_CALLBACK` | function wrapper | Secure wrapper for event callbacks (security) |
-| `WYNF_ENC_FUNC` | function wrapper | Runtime-decrypted function with key server support (security) |
-| `WYNF_ENC_FUNC_SEED` | function wrapper | Runtime-decrypted function with numeric seed key (security) |
-| `WYNF_GET_RNG_SEED` | function call | [PREMIUM] Per-run non-deterministic seed for RNG/anti-replay (security) |
-| `WYNF_BEGIN_CLIENT_LINES` | statement | [PREMIUM] Reset line-info base for service/enterprise builds (debug) |
-
-### `WYNF_OBFUSCATED`
-A **compile-time** constant that evaluates to `true` in obfuscated builds. In plain Lua (non-obfuscated), it behaves like a normal global (typically `nil`/`false`).
-* **Dead Code Pruning:** When used as an `if` condition, the compiler **removes unreachable branches** from the output entirely. This means dev-only stubs and fallback code gated by `WYNF_OBFUSCATED` are not present in the obfuscated bytecode at all.
-
-### `WYNF_NO_VIRTUALIZE`
-Marks a function to run as **native Lua** instead of inside the VM. This bypasses VM overhead for performance-critical code like hot loops or heavy math/table/string operations.
-* **WARNING:** Code wrapped with `WYNF_NO_VIRTUALIZE` is **NOT protected** through virtualization. Your code will be minified, but raw strings and logic will still be exposed.
-* **Limitations:** Self-recursion, Nesting, and Mutual recursion are not supported.
-
-### `WYNF_JIT`
-Marks a function for Wynfuscate's JIT-style **micro-VM** execution path. The function remains **virtualized**, but executes under a more performance-oriented interpreter template. Good for math, string operations, and loops (~1.5x - 2.9x faster).
-
-### `WYNF_JIT_MAX`
-A higher-performance variant of `WYNF_JIT` with more aggressive caching and faster dispatch. The function remains **virtualized**, but uses additional optimizations for maximum speed (~1.9x - 5.7x faster). Trades off memory and closure creation speed for execution speed.
-
-### `WYNF_INLINE`
-`WYNF_INLINE` is a compile-time macro that removes a small helper function and expands its body directly at supported callsites during obfuscation. This avoids the call boundary cost for tiny helpers.
-
-### `WYNF_CRASH`
-Immediately and irrecoverably terminates the script. Must be called directly. No code after `WYNF_CRASH()` will execute.
-
-### `WYNF_IS_CALLER_WYNFUSCATE`
-Returns `true` if the current function was called from within your obfuscated code, and `false` if it was called from an external source like an exploit script. Protects RemoteEvent handlers and Module functions.
-
-### `WYNF_ENC_STRING`
-Applies additional encryption layers to a string literal, providing extra protection for highly sensitive values like API keys, passwords, and encryption keys.
-
-### `WYNF_ENC_NUM`
-Protects a numeric literal by encoding it in an encrypted form, preventing magic numbers from being trivially found via memory scanning or static analysis.
-
-### `WYNF_LINE`
-Expands to the current source line number at compile time. This provides a stable line marker for logs and error messages without relying on VM debug info.
-
-### `WYNF_NO_UPVALUES`
-Creates a lightweight wrapper around your function for compatibility with certain environments or APIs that have issues with virtualized functions used as callbacks.
-
-### `WYNF_SECURE_CALL`
-Marks a function as **VM-only callable**. Calls to this function will only succeed when they originate from inside your obfuscated code (fail-closed).
-
-### `WYNF_SECURE_CALLBACK`
-Returns a wrapped callback that performs a caller gate before invoking your function. Intended for **event handlers and callbacks**. Uses **fail-quiet** behavior (returns `nil` if external).
-
-### `WYNF_ENC_FUNC`
-Encrypts a function body at **build time** and returns a callable wrapper that decrypts and executes the function at **runtime** using a 64-character hex key provided by your server.
-
-### `WYNF_ENC_FUNC_SEED`
-A **numeric-key variant** of `WYNF_ENC_FUNC`. Uses a 53-bit numeric seed for encryption/decryption. Ideal for Roblox/Luau workflows where numeric keys blend in better.
-
-### `WYNF_GET_RNG_SEED` (Premium)
-Returns a unique, non-deterministic integer seed on every script execution. Used for anti-replay, tokens, and seeding custom RNGs. (Alias: `WYNF_GET_RNG()`).
-
-### `WYNF_BEGIN_CLIENT_LINES` (Premium)
-A source-level line-info marker for enterprise builds that prepend their own loader or key system. Resets the displayed source line base so the next physical line is reported as client line `1`.
+1. [Overview & Architecture](#overview--architecture)
+2. [Macros & Preprocessor Directives](#macros--preprocessor-directives)
+   - [Macro Quick Reference](#macro-quick-reference)
+   - [Development Shim Header](#development-shim-header)
+3. [Obfuscation Settings & Configuration](#obfuscation-settings--configuration)
+   - [Security Tiers](#security-tiers)
+   - [Target Platforms](#target-platforms)
+   - [Feature Flags & Toggles](#feature-flags--toggles)
+4. [Platform Compatibility & Limitations](#platform-compatibility--limitations)
+5. [REST API Documentation (v1)](#rest-api-documentation-v1)
+   - [Authentication](#authentication)
+   - [Endpoints](#endpoints)
+   - [cURL Examples](#curl-examples)
+6. [Plans, Pricing & Quotas](#plans-pricing--quotas)
+7. [Optimization & Security Best Practices](#optimization--security-best-practices)
 
 ---
 
-## 2. Obfuscation Settings
+## Overview & Architecture
+
+wYnFuscate compiles input Lua/Luau scripts into protected virtual machine (VM) bytecode. The compilation engine features:
+- **Multi-Tier VM Architectures:** Choose between baseline standard virtualization, enhanced polymorphic execution, or high-performance JIT-style micro-VM interpreters.
+- **AST Obfuscation & Dynamic Flattening:** Control-flow flattening, instruction re-ordering, constant mutation, and opaque predicates.
+- **Granular Macro Directives:** Control security intensity and devirtualization on a per-function level directly in source code.
+- **Caller Authentication:** Gated execution verification to prevent exploiters from intercepting internal handlers or connecting unauthorized callers.
+
+---
+
+## Macros & Preprocessor Directives
+
+wYnFuscate provides compile-time macros for conditional compilation, selective virtualization, and cryptographic wrapping.
+
+> [!TIP]
+> For detailed parameter types, Luau type signatures, and deep-dive examples for each macro, refer to [wYnFuscate Macros Documentation](file:///c:/Users/Ren/AppData/Local/Potassium/scripts/silly-little-docs/wynfuscate_macros_documentation.md).
+
+### Macro Quick Reference
+
+| Macro | Type / Category | Purpose | Tier |
+| :--- | :--- | :--- | :--- |
+| `WYNF_OBFUSCATED` | Boolean constant | Compile-time detection; gates dead-code pruning | Free |
+| `WYNF_LINE` | Compile-time value | Source file line number marker | Free |
+| `WYNF_CRASH` | Destructive call | Instantly halts and corrupts VM execution | Free |
+| `WYNF_NO_VIRTUALIZE` | Function wrapper | Native execution bypassing VM (unprotected) | Free |
+| `WYNF_JIT` | Function wrapper | High-speed micro-VM execution (~1.5x–2.9x faster) | Free |
+| `WYNF_JIT_MAX` | Function wrapper | Maximum performance VM execution (~1.9x–5.7x faster) | Free |
+| `WYNF_INLINE` | Compile-time macro | Inlines small helper functions at call sites | Free |
+| `WYNF_ENC_STRING` | String wrapper | Cryptographically encrypts sensitive strings | Free |
+| `WYNF_ENC_NUM` | Number wrapper | Encrypts numeric literals against static scanning | Free |
+| `WYNF_ENC_FUNC` | Function wrapper | Runtime-decrypted function with 64-char hex key | Free |
+| `WYNF_ENC_FUNC_SEED` | Function wrapper | Runtime-decrypted function with 53-bit numeric seed | Free |
+| `WYNF_IS_CALLER_WYNFUSCATE` | Function call | Returns `true` if invoked from inside the VM | Free |
+| `WYNF_SECURE_CALL` | Function wrapper | Restricts function to VM-only callers (fail-closed) | Free |
+| `WYNF_SECURE_CALLBACK` | Function wrapper | Caller gate for event listeners (fail-quiet) | Free |
+| `WYNF_NO_UPVALUES` | Function wrapper | 0-upvalue compatibility wrapper for hooks/callbacks | Free |
+| `WYNF_GET_RNG_SEED` | Function call | Per-run non-deterministic entropy seed | **Premium** |
+| `WYNF_BEGIN_CLIENT_LINES` | Statement directive | Resets source line number base for layered loaders | **Premium** |
+
+### Development Shim Header
+
+Place the following shim at the very top of your scripts to ensure compatibility during development, local Luau execution (`tests/run_test.js`), and IDE diagnostics:
+
+```lua
+if not WYNF_OBFUSCATED then
+    WYNF_OBFUSCATED = false
+    WYNF_CRASH = function() error("WYNF_CRASH called") end
+    WYNF_LINE = function() return 0 end
+    WYNF_NO_VIRTUALIZE = function(func) return func end
+    WYNF_JIT = function(func) return func end
+    WYNF_JIT_MAX = function(func) return func end
+    WYNF_INLINE = function(func) return func end
+    WYNF_ENC_STRING = function(str) return str end
+    WYNF_ENC_NUM = function(num) return num end
+    WYNF_ENC_FUNC = function(func, encKey, decKey) return func end
+    WYNF_ENC_FUNC_SEED = function(func, seed, decSeed) return func end
+    WYNF_IS_CALLER_WYNFUSCATE = function() return true end
+    WYNF_SECURE_CALL = function(func) return func end
+    WYNF_SECURE_CALLBACK = function(func) return func end
+    WYNF_NO_UPVALUES = function(func) return func end
+    WYNF_GET_RNG_SEED = function() return math.random(1, 1000000) end
+    WYNF_GET_RNG = WYNF_GET_RNG_SEED
+    WYNF_BEGIN_CLIENT_LINES = nil
+
+    if typeof and getgenv and typeof(getgenv) == "function" then
+        local env = getgenv()
+        env.WYNF_OBFUSCATED = false
+        env.WYNF_CRASH = WYNF_CRASH
+        env.WYNF_LINE = WYNF_LINE
+        env.WYNF_NO_VIRTUALIZE = WYNF_NO_VIRTUALIZE
+        env.WYNF_JIT = WYNF_JIT
+        env.WYNF_JIT_MAX = WYNF_JIT_MAX
+        env.WYNF_INLINE = WYNF_INLINE
+        env.WYNF_ENC_STRING = WYNF_ENC_STRING
+        env.WYNF_ENC_NUM = WYNF_ENC_NUM
+        env.WYNF_ENC_FUNC = WYNF_ENC_FUNC
+        env.WYNF_ENC_FUNC_SEED = WYNF_ENC_FUNC_SEED
+        env.WYNF_IS_CALLER_WYNFUSCATE = WYNF_IS_CALLER_WYNFUSCATE
+        env.WYNF_SECURE_CALL = WYNF_SECURE_CALL
+        env.WYNF_SECURE_CALLBACK = WYNF_SECURE_CALLBACK
+        env.WYNF_NO_UPVALUES = WYNF_NO_UPVALUES
+        env.WYNF_GET_RNG_SEED = WYNF_GET_RNG_SEED
+        env.WYNF_GET_RNG = WYNF_GET_RNG
+    end
+end
+```
+
+---
+
+## Obfuscation Settings & Configuration
 
 ### Security Tiers
-* **Standard:** Baseline protection with fast processing. Recommended for most scripts.
-* **Enhanced:** Additional protection layers with moderate overhead.
-* **Max:** Maximum security with all protection features enabled. Comes with a performance trade-off.
 
-### Enhanced VM Compression
-Premium toggle. Greatly reduces the overall file size of the obfuscated output at the cost of a slight increase in initialization speed. Target platform must support `loadstring`.
+| Tier | Security Level | Performance Impact | Recommended Use Case |
+| :--- | :--- | :--- | :--- |
+| `STANDARD` | Baseline | Minimal | General game automation, non-critical modules, quick builds. |
+| `ENHANCED` | High | Moderate (~15–30% overhead) | Production client hubs, core game logic, license validation. |
+| `MAX` | Maximum | Substantial | Anticheat bypasses, payment processing, zero-trust components. |
 
-### Line Info
-When enabled, unhandled runtime errors from obfuscated code are remapped to the original source file and line number (format: `source.lua:<line>: WYNF: <error body>`).
-
-### Performance Mode
-Prioritizes runtime speed for large scripts, especially method/table/callback-heavy UI scripts. Reduces some polymorphic and runtime hardening choices.
-
-### Enhanced Anti-Tamper
-Additional anti-tamper measures applied to the protected output. May not be compatible with all environments.
-
-### Auto Inline Small Helpers
-Automatically applies the `WYNF_INLINE` macro to eligible small helper functions before obfuscation.
+---
 
 ### Target Platforms
-* **Roblox:** Optimized for Roblox (Luau) - Default.
-* **Roblox (Max Compatibility):** For custom environments that fail with standard Roblox target.
-* **Luau:** Standalone Luau CLI.
-* **Lua 5.1 - Lua 5.4:** Standard Lua environments.
-* **LuaJIT:** LuaJIT 2.x.
+
+| Platform Key | Target Environment | Details |
+| :--- | :--- | :--- |
+| `ROBLOX` | Roblox (Luau) | Default target. Employs Luau-specific optimizations and fast metamethods. |
+| `ROBLOX_COMPAT` | Roblox (Max Compatibility) | Disables certain aggressive VM dispatching for modified or unstable executors. |
+| `LUAU` | Standalone Luau CLI | Optimized for standalone Luau runtimes without Roblox globals. |
+| `LUA51` – `LUA54` | Standard Lua 5.1, 5.2, 5.3, 5.4 | Compatible with standard Lua interpreters and game engines (Garry's Mod, FiveM). |
+| `LUAJIT` | LuaJIT 2.x | Tuned for LuaJIT bytecode alignment and FFI compatibility. |
 
 ---
 
-## 3. Known Limitations
+### Feature Flags & Toggles
 
-* **Stack Level Differences:** The VM adds additional stack frames. Code relying on specific stack levels (e.g., `debug.getinfo`) may behave differently.
-* **Upvalue Handling:** Access patterns may differ from native Lua.
-* **Performance Overhead:** Obfuscated code has overhead due to VM interpretation.
+| Setting | Type | Tier | Description |
+| :--- | :--- | :--- | :--- |
+| `enhancedVmCompression` | boolean | Pro/Enterprise | Uses high-ratio bytecode compression into a compact loader. Requires `loadstring`. |
+| `lineInfo` | boolean | All | Remaps runtime errors back to original source file and line numbers. |
+| `performanceMode` | boolean | All | Disables heavy polymorphic transformations to optimize table/UI heavy scripts. |
+| `enhancedAntiTamper` | boolean | All | Inlines VM integrity checks and hook detection guards. |
+| `autoInlineSmallHelpers`| boolean | All | Automatically applies `WYNF_INLINE` to qualifying helper functions. |
 
 ---
 
-## 4. API Reference (REST v1)
+## Platform Compatibility & Limitations
+
+> [!WARNING]
+> Review the following known behaviors before deploying obfuscated builds into production environments:
+
+- **Stack Trace Levels:** The VM interpreter inserts synthetic stack frames. Functions relying on strict stack indexing (e.g. `debug.getinfo(2)`) may receive VM internal frames unless properly guarded.
+- **Native Devirtualization Scope:** Functions marked with `WYNF_NO_VIRTUALIZE` do not support self-recursion, mutual recursion, or nested non-virtualized functions.
+- **Hook Compatibility:** Virtualized functions contain multiple internal upvalues. When passing callbacks to executor hooks (`hookfunction`), wrap them in `WYNF_NO_UPVALUES`.
+
+---
+
+## REST API Documentation (v1)
 
 Base URL: `https://wynfuscate.com/api/v1`
 
-Authentication: Bearer token using your API key (format: `wynf_` + 32 alphanumeric chars).
-```bash
-Authorization: Bearer $WYN_KEY
+### Authentication
+
+All API requests must include your API key in the `Authorization` header as a Bearer token:
+
+```http
+Authorization: Bearer wynf_abcdef0123456789abcdef0123456789
+Content-Type: multipart/form-data
 ```
+
+---
 
 ### Endpoints
-* `POST /obfuscate` - Submit a file for obfuscation.
-* `GET /jobs/{id}` - Get job status and details.
-* `GET /jobs/{id}/download` - Download obfuscated output.
-* `DELETE /jobs/{id}` - Delete job and free storage.
 
-**Example `POST /obfuscate` request:**
-```bash
-curl -X POST https://wynfuscate.com/api/v1/obfuscate \
-  -H "Authorization: Bearer $WYN_KEY" \
-  -F "file=@script.lua" \
-  -F "securityTier=ENHANCED" \
-  -F "targetPlatform=ROBLOX" \
-  -F "node=STABLE"
+#### 1. `POST /api/v1/obfuscate`
+Submits a source script for compilation.
+
+**Parameters (multipart/form-data):**
+- `file` (File, required): Source script file (max 50 MB).
+- `securityTier` (string, optional): `STANDARD`, `ENHANCED`, or `MAX` (default: `STANDARD`).
+- `targetPlatform` (string, optional): `ROBLOX`, `ROBLOX_COMPAT`, `LUAU`, `LUA51`, etc. (default: `ROBLOX`).
+- `node` (string, optional): Compilation node cluster (`STABLE` or `BETA`).
+- `enhancedVmCompression` (boolean, optional): Toggle VM loader compression.
+- `performanceMode` (boolean, optional): Enable performance-tuned dispatch.
+- `lineInfo` (boolean, optional): Preserve source line mappings.
+
+**Response (JSON):**
+```json
+{
+  "success": true,
+  "jobId": "job_94820d8a1f2e4c9b",
+  "status": "QUEUED",
+  "estimatedTimeSeconds": 3.5
+}
 ```
 
 ---
 
-## 5. Plans & Pricing
+#### 2. `GET /api/v1/jobs/{id}`
+Retrieves compilation status and telemetry.
 
-* **Free:** $0 - 1 obfuscation/month, 1 concurrent job, Standard tier.
-* **Basic:** $10/mo - 300 obfuscations/month, 2 concurrent jobs, Standard tier.
-* **Pro:** $19.99/mo - 1,000 obfuscations/month, 5 concurrent jobs, All tiers, API access.
-* **Enterprise:** $49.99/mo - Unlimited obfuscations, 20 concurrent jobs, All tiers, API access, Dedicated support.
-* **On-Demand Credits:** $2.00 for 5 credits up to $14.00 for 50 credits.
+**Response (JSON - Completed):**
+```json
+{
+  "success": true,
+  "jobId": "job_94820d8a1f2e4c9b",
+  "status": "COMPLETED",
+  "inputSize": 45280,
+  "outputSize": 182400,
+  "compilationTimeMs": 1420
+}
+```
 
 ---
 
-## 6. Optimization Tips
+#### 3. `GET /api/v1/jobs/{id}/download`
+Downloads the finalized obfuscated Lua script.
 
-### Performance
-- Minimize hot loop complexity
-- Cache frequently accessed values
-- Use local variables where possible
+- **Response Content-Type:** `text/x-lua` or `application/octet-stream`
+- **Response Body:** Obfuscated Lua code string.
 
-### Security
-- Use macros for sensitive paths
-- Avoid string-based function calls
-- Implement integrity checks
+---
 
-### Best Practices
-- Test obfuscated output thoroughly
-- Keep original source versioned
-- Monitor for issues in production
+#### 4. `DELETE /api/v1/jobs/{id}`
+Deletes job artifacts and purges cached output from the server.
+
+---
+
+### cURL Examples
+
+#### Submitting a Job
+```bash
+curl -X POST https://wynfuscate.com/api/v1/obfuscate \
+  -H "Authorization: Bearer $WYNFUSCATE_API_KEY" \
+  -F "file=@source.luau" \
+  -F "securityTier=ENHANCED" \
+  -F "targetPlatform=ROBLOX" \
+  -F "performanceMode=true"
+```
+
+#### Polling Job Status
+```bash
+curl -X GET https://wynfuscate.com/api/v1/jobs/job_94820d8a1f2e4c9b \
+  -H "Authorization: Bearer $WYNFUSCATE_API_KEY"
+```
+
+#### Downloading the Result
+```bash
+curl -X GET https://wynfuscate.com/api/v1/jobs/job_94820d8a1f2e4c9b/download \
+  -H "Authorization: Bearer $WYNFUSCATE_API_KEY" \
+  -o protected_output.luau
+```
+
+---
+
+## Plans, Pricing & Quotas
+
+| Plan | Monthly Price | Quota (Jobs/mo) | Concurrent Jobs | API Access | Security Tiers Available |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Free** | $0 | 1 | 1 | No | `STANDARD` |
+| **Basic** | $10 | 300 | 2 | No | `STANDARD` |
+| **Pro** | $19.99 | 1,000 | 5 | Yes | All (`STANDARD`, `ENHANCED`, `MAX`) |
+| **Enterprise** | $49.99 | Unlimited | 20 | Yes | All + Dedicated Cluster |
+
+*On-Demand Credit Packs: $2.00 for 5 credits up to $14.00 for 50 credits.*
+
+---
+
+## Optimization & Security Best Practices
+
+1. **Selective Macro Usage**:
+   - Wrap performance-critical rendering code in `WYNF_NO_VIRTUALIZE`.
+   - Wrap frequently called algorithmic loops in `WYNF_JIT` or `WYNF_JIT_MAX`.
+   - Reserve `STANDARD` or `MAX` VM virtualization for core authorization, license checking, and network handling.
+2. **Defensive Callback Isolation**:
+   - Secure external Roblox listeners (`RemoteEvent.OnClientEvent`) using `WYNF_SECURE_CALLBACK` to prevent unauthorized client triggering.
+3. **Dead-Code Elimination**:
+   - Isolate development testing code within `if not WYNF_OBFUSCATED then ... end` to ensure zero dead code footprint in distributable scripts.
