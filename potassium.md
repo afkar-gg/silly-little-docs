@@ -224,6 +224,22 @@ Retained-mode 2D drawing pipeline providing visual primitives overlaid on the Ro
 | **`Font`** | `Data: string` | `""` | Raw font binary data (TTF/OTF) used for custom typography. |
 | **`Shader`** | `Vertex: string`<br>`Pixel: string`<br>`Position: Vector2`<br>`Size: Vector2` | `""`<br>`""`<br>`Vector2.zero`<br>`Vector2.zero` | Custom DirectX HLSL shader object. Call `:Create()` after updating shader code. |
 
+#### Example: Primitive Drawing Object
+
+```lua
+local circle = Drawing.new("Circle")
+circle.Radius = 50
+circle.Color = Color3.fromRGB(255, 0, 0)
+circle.Filled = true
+circle.NumSides = 32
+circle.Position = Vector2.new(300, 300)
+circle.Transparency = 0.7
+circle.Visible = true
+
+task.wait(1)
+circle:Destroy()
+```
+
 ### Shader Object & HLSL Pipeline
 
 Potassium supports custom hardware HLSL shader rendering on the GPU via `Drawing.new("Shader")`.
@@ -242,6 +258,71 @@ cbuffer Params : register(b0)
 };
 ```
 
+#### Example: Wavey Sine Shader
+
+```lua
+local shaderObject = Drawing.new("Shader")
+
+shaderObject.Vertex = [[
+struct VSOut
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+VSOut main(uint id : SV_VertexID)
+{
+    VSOut o;
+
+    float2 pos[3] = {
+        float2(-1.0, -1.0),
+        float2(-1.0,  3.0),
+        float2( 3.0, -1.0)
+    };
+
+    float2 uv[3] = {
+        float2(0.0, 1.0),
+        float2(0.0, -1.0),
+        float2(2.0, 1.0)
+    };
+
+    o.pos = float4(pos[id], 0.0, 1.0);
+    o.uv  = uv[id];
+
+    return o;
+}]]
+
+shaderObject.Pixel = [[
+cbuffer Params : register(b0)
+{
+    float time;
+    float2 resolution;
+    float2 mouse;
+};
+
+float4 main(float4 pos : SV_Position, float2 uv : TEXCOORD0) : SV_Target
+{
+    float2 p = uv - 0.5;
+    p *= 2.0;
+
+    for (int i = 1; i < 5; i++)
+    {
+        float fi = (float)(i + 11);
+
+        float2 freq  = float2(1.6, 1.1) * fi;
+        float2 phase = time * (float)i * float2(3.4, 0.5) / 10.0;
+
+        p += sin(p.yx * freq + phase) * 0.1;
+    }
+
+    float c = abs(sin(p.y) + sin(p.x)) * 0.5;
+
+    return float4(c.xxx, 1.0);
+}]]
+
+shaderObject:Create()
+```
+
 ---
 
 ## DrawingImmediate Library
@@ -251,17 +332,30 @@ High-performance immediate-mode rendering system that executes per-frame render 
 | Function | Signature | Description |
 | :--- | :--- | :--- |
 | `DrawingImmediate.GetPaint` | `function DrawingImmediate.GetPaint(zIndex: int): PsmSignal` | Returns an event that fires every render step for the specified `zIndex`. Lower `zIndex` events fire first. All `DrawingImmediate.*` primitives must be called inside this callback. |
-| `DrawingImmediate.Line` | `function DrawingImmediate.Line(from: Vector2, to: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders an immediate line segment. |
-| `DrawingImmediate.Circle` | `function DrawingImmediate.Circle(center: Vector2, radius: number, color: Color3, opacity: number, num_sides: int, thickness: number): ()` | Renders an immediate outline circle. |
-| `DrawingImmediate.FilledCircle` | `function DrawingImmediate.FilledCircle(center: Vector2, radius: number, color: Color3, num_sides: int, opacity: number): ()` | Renders a filled circle. |
-| `DrawingImmediate.Triangle` | `function DrawingImmediate.Triangle(a: Vector2, b: Vector2, c: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders an immediate wireframe triangle. |
-| `DrawingImmediate.FilledTriangle` | `function DrawingImmediate.FilledTriangle(a: Vector2, b: Vector2, c: Vector2, color: Color3, opacity: number): ()` | Renders an immediate filled triangle. |
-| `DrawingImmediate.Rectangle` | `function DrawingImmediate.Rectangle(topLeft: Vector2, size: Vector2, color: Color3, opacity: number, rounding: number, thickness: number): ()` | Renders a rounded outline rectangle. |
-| `DrawingImmediate.FilledRectangle` | `function DrawingImmediate.FilledRectangle(topLeft: Vector2, size: Vector2, color: Color3, opacity: number, rounding: number): ()` | Renders a rounded filled rectangle. |
-| `DrawingImmediate.Quad` | `function DrawingImmediate.Quad(a: Vector2, b: Vector2, c: Vector2, d: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders a wireframe quad. |
-| `DrawingImmediate.FilledQuad` | `function DrawingImmediate.FilledQuad(a: Vector2, b: Vector2, c: Vector2, d: Vector2, color: Color3, opacity: number): ()` | Renders a filled quad. |
-| `DrawingImmediate.Text` | `function DrawingImmediate.Text(pos: Vector2, font: number, fontSize: number, color: Color3, opacity: number, text: string, center: boolean): ()` | Renders immediate text. |
-| `DrawingImmediate.OutlinedText` | `function DrawingImmediate.OutlinedText(pos: Vector2, font: number, fontSize: number, color: Color3, opacity: number, outlineColor: Color3, outlineOpacity: number, text: string, center: boolean): ()` | Renders immediate outlined text. |
+| `DrawingImmediate.Line` | `function DrawingImmediate.Line(from: Vector2, to: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders an immediate line segment between two specified points. |
+| `DrawingImmediate.Circle` | `function DrawingImmediate.Circle(center: Vector2, radius: number, color: Color3, opacity: number, num_sides: int, thickness: number): ()` | Renders an immediate outline circle at a specified center point. |
+| `DrawingImmediate.FilledCircle` | `function DrawingImmediate.FilledCircle(center: Vector2, radius: number, color: Color3, num_sides: int, opacity: number): ()` | Renders an immediate filled circle at a specified center point. |
+| `DrawingImmediate.Triangle` | `function DrawingImmediate.Triangle(point_a: Vector2, point_b: Vector2, point_c: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders an immediate wireframe triangle between three specified points. |
+| `DrawingImmediate.FilledTriangle` | `function DrawingImmediate.FilledTriangle(point_a: Vector2, point_b: Vector2, point_c: Vector2, color: Color3, opacity: number): ()` | Renders an immediate filled triangle between three specified points. |
+| `DrawingImmediate.Rectangle` | `function DrawingImmediate.Rectangle(top_left: Vector2, size: Vector2, color: Color3, opacity: number, rounding: number, thickness: number): ()` | Renders an immediate rounded outline rectangle at a specified point. |
+| `DrawingImmediate.FilledRectangle` | `function DrawingImmediate.FilledRectangle(top_left: Vector2, size: Vector2, color: Color3, opacity: number, rounding: number): ()` | Renders an immediate rounded filled rectangle at a specified point. |
+| `DrawingImmediate.Quad` | `function DrawingImmediate.Quad(point_a: Vector2, point_b: Vector2, point_c: Vector2, point_d: Vector2, color: Color3, opacity: number, thickness: number): ()` | Renders an immediate wireframe quad between four specified points. |
+| `DrawingImmediate.FilledQuad` | `function DrawingImmediate.FilledQuad(point_a: Vector2, point_b: Vector2, point_c: Vector2, point_d: Vector2, color: Color3, opacity: number): ()` | Renders an immediate filled quad between four specified points. |
+| `DrawingImmediate.Text` | `function DrawingImmediate.Text(position: Vector2, font: number, font_size: number, color: Color3, opacity: number, text: string, center: boolean): ()` | Renders immediate text at a specified point. |
+| `DrawingImmediate.OutlinedText` | `function DrawingImmediate.OutlinedText(position: Vector2, font: number, font_size: number, color: Color3, opacity: number, outline_color: Color3, outline_opacity: number, text: string, center: boolean): ()` | Renders immediate outlined text at a specified point. |
+
+### Example: Immediate FOV Circle Rendering
+
+```lua
+local signal = DrawingImmediate.GetPaint(1)
+local uis = game:GetService("UserInputService")
+
+signal:Connect(function()
+    local mousepos = uis:GetMouseLocation()
+
+    DrawingImmediate.Circle(mousepos, 100, Color3.new(1, 1, 1), 1, 100, 1)
+end)
+```
 
 ---
 
@@ -432,7 +526,30 @@ Potassium provides an isolated **Off-Thread Hooking (`oth`)** architecture desig
 | `oth.is_hook_thread` | `function oth.is_hook_thread(): boolean` | Checks whether the current thread is executing inside an OTH hook handler. |
 | `oth.unhook` | `function oth.unhook(target: function): ()` | Unhooks a function previously hooked with `oth.hook`. |
 
-### Example: Bypassing Anti-Cheat Services via OTH
+### Examples: Off-Thread Hooking
+
+#### Hooking `Instance.new`
+```lua
+local old = nil
+old = oth.hook(Instance.new, function(...)
+    print("Creating new instance:", ...)
+
+    return old(...)
+end)
+```
+
+#### Hiding Services via `oth.get_root_callback`
+```lua
+oth.hook(game.FindService, function(self, service)
+    if service == "VirtualInputManager" then
+        return nil
+    end
+
+    return oth.get_root_callback()(self, service)
+end)
+```
+
+#### Bypassing Nil-Parent Anti-Cheats via `oth.get_original_thread`
 ```lua
 oth.hook(game.GetService, function(self, service)
     local thread = oth.get_original_thread()
@@ -470,6 +587,18 @@ A lightweight, high-performance custom signal implementation built into Potassiu
 | :--- | :--- |
 | `Disconnect(): ()` | Disconnects the connection listener from the signal. |
 
+### Example
+
+```lua
+local signal = PsmSignal.new()
+
+signal:Once(function()
+    print("Signal fired!")
+end)
+
+signal:Fire()
+```
+
 ---
 
 ## RakNet Library
@@ -504,6 +633,42 @@ Low-level networking library for intercepting, modifying, spoofing, and blocking
 #### Methods
 - `SetData(data: buffer | table | string | {number}): ()` — Overwrites the packet payload prior to sending/receiving.
 - `Block(): ()` — Drops and cancels the packet, preventing it from reaching its destination.
+
+### Examples
+
+#### Packet Inspection
+```lua
+raknet.add_send_hook(function(packet)
+    print("ID:", packet.PacketId)
+    print("Size:", packet.Size)
+    print("Priority:", packet.Priority)
+    print("Data (as buffer):", packet.AsBuffer)
+    print("Data (as array):", packet.AsArray)
+    print("Data (as string):", packet.AsString)
+    print("Reliability:", packet.Reliability)
+    print("Ordering Channel:", packet.OrderingChannel)
+end)
+```
+
+#### Replication Desync (Modifying `ID_TIMESTAMP`)
+```lua
+raknet.add_send_hook(function(packet)
+    if packet.PacketId == 0x1B then
+        local buf = packet.AsBuffer
+        buffer.writeu32(buf, 1, 0xFFFFFFFF)
+
+        packet:SetData(buf)
+    end
+end)
+```
+
+#### Sending Raw Packets
+```lua
+local buf = buffer.create(2)
+buffer.writeu8(buf, 1, 123)
+
+raknet.send(buf, 1, 0, 0)
+```
 
 ---
 
@@ -566,6 +731,25 @@ Functions for decompiling, disassembling bytecode, inspecting script environment
 | `getscriptthread` | `function getscriptthread(script: BaseScript): thread?` | — | Retrieves the root thread associated with a script. |
 | `getthreadidentity` | `function getthreadidentity(): number` | `getidentity`, `getthreadcontext`, `get_thread_identity`, `getthreadcaps` | Returns the security identity context of the current thread (e.g. `8`). |
 | `setthreadidentity` | `function setthreadidentity(identity: number): ()` | `setidentity`, `setthreadcontext`, `set_thread_identity` | Changes the security identity context of the current thread. |
+
+### Decompile Examples
+
+#### Decompiling a Script
+```lua
+local script = game.StarterPlayer.StarterPlayerScripts.RbxCharacterSounds
+print(decompile(script))
+```
+
+#### Decompiling a Function
+```lua
+local function exampleFunction()
+    local part = Instance.new("Part")
+    part.Name = "Hello, world!"
+    part:Destroy()
+end
+
+print(decompile(exampleFunction))
+```
 
 ---
 
