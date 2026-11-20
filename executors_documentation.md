@@ -1,6 +1,6 @@
-# Roblox Executors & sUNC Unified API Documentation
+# Executors & sUNC Unified API Documentation
 
-Scripting API reference for Luau Roblox executors, combining sUNC with Potassium, Madium, Volt, and Kawaii.
+Scripting API reference for Luau executors, combining sUNC with Potassium, Madium, Volt, and Kawaii.
 
 | Source | Official Documentation | Scope & Notes | Last Synced |
 | :--- | :--- | :--- | :--- |
@@ -137,7 +137,7 @@ Kawaii tags every function by how it interacts with the calling coroutine:
 
 Source: https://docs.sunc.io/ (Mirrors: https://docs.sunc.su/, https://github.com/sUNC-Utilities/docs)
 
-sUNC (*senS' Unified Naming Convention*) specifies the Roblox executor API functions verified by the official sUNC test suite.
+sUNC (*senS' Unified Naming Convention*) specifies the executor API functions verified by the official sUNC test suite.
 
 > [!IMPORTANT]
 > sUNC covers only functions actively tested by the official sUNC script. Unlike the legacy UNC standard, which became prone to shallow spoofing, sUNC tests real-world behavior, tightens signatures and return types, and removes deprecated namespaces such as `crypt`.
